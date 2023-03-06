@@ -1,0 +1,19 @@
+{
+  "name": "chatgpt-mattermost-bot",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node ./src/botservice.js"
+  },
+  "dependencies": {
+    "openai": "^3.2.1",
+    "@mattermost/client": "^7.8.0",
+    "babel-polyfill": "^6.26.0",
+    "isomorphic-fetch": "^3.0.0",
+    "ws": "^8.12.1"
+  },
+  "engines" : {
+    "npm" : ">=8.0.0",
+    "node" : ">=16.0.0"
+  }
+}
