@@ -11,8 +11,7 @@ if (!global.WebSocket) {
 
 // the mattermost library uses FormData, which does not seem to be polyfilled - so here is a very simple polyfill :-)
 if (!global.FormData) {
-    global.FormData = function Dummy() {
-    }
+    global.FormData = function Dummy() {}
 }
 
 const client = new Client4()
@@ -29,9 +28,8 @@ const name = "@chatgpt";
 wsClient.addMessageListener(async function (event) {
     if (['posted'].includes(event.event) && meId) {
         const post = JSON.parse(event.data.post);
-        if (post.root_id === "" && !JSON.parse(event.data.mentions).includes(meId)) {
+        if (post.root_id === "" && (!event.data.mentions || (!JSON.parse(event.data.mentions).includes(meId)))) {
             // we're not in a thread and we are not mentioned - ignore the message
-            // console.log(' I am ignoring you!')
         } else {
             if (post.user_id !== meId) {
                 const chatmessages = [
@@ -47,20 +45,31 @@ wsClient.addMessageListener(async function (event) {
                     .filter(a => a.create_at > Date.now() - 1000 * 60 * 60 * 24 * 1)
                     .sort((a, b) => a.create_at - b.create_at)
 
+                let assistantCount = 0;
                 posts.forEach(threadPost => {
                     if (threadPost.user_id === meId) {
                         chatmessages.push({role: "assistant", content: threadPost.message})
+                        assistantCount++
                     } else {
+                        if (threadPost.message.includes(name)){
+                            assistantCount++;
+                        }
                         chatmessages.push({role: "user", content: threadPost.message})
                     }
                 })
 
-                const answer = await continueThread(chatmessages)
-                const newPost = await client.createPost({
-                    message: answer,
-                    channel_id: post.channel_id,
-                    root_id: post.root_id || post.id
-                })
+                // see if we are actually part of the conversation -
+                // ignore conversations where were never mentioned or participated.
+                if (assistantCount > 0){
+                    wsClient.userTyping(post.channel_id, post.id)
+                    wsClient.userUpdateActiveStatus(true, true)
+                    const answer = await continueThread(chatmessages)
+                    const newPost = await client.createPost({
+                        message: answer,
+                        channel_id: post.channel_id,
+                        root_id: post.root_id || post.id
+                    })
+                }
             }
         }
     } else {
@@ -71,10 +80,10 @@ wsClient.addMessageListener(async function (event) {
 let matterMostURL = new URL(matterMostURLString);
 const wsUrl = `${matterMostURL.protocol === 'https:' ? 'wss' : 'ws'}://${matterMostURL.host}/api/v4/websocket`
 
-wsClient.initialize(wsUrl, mattermostToken)
-
 new Promise((resolve, reject) => {
     wsClient.addCloseListener(connectFailCount => reject())
-    wsClient.addErrorListener(event => console.log(event))
-}).then(() => process.exit(0))
+    wsClient.addErrorListener(event => { reject(event) })
+}).then(() => process.exit(0)).catch(reason => { console.error(reason); process.exit(-1)})
+
+wsClient.initialize(wsUrl, mattermostToken)
 
