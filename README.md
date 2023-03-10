@@ -66,6 +66,18 @@ MATTERMOST_TOKEN: abababacdcdcd
 OPENAI_API_KEY: sk-234234234234234234
 ```
 
+### Optional Environment Variables
+```yaml
+# Set this if using a custom username for the bot, default = @chatgpt
+MATTERMOST_BOTNAME: "@chatgpt"
+
+# Console logging output level, default = INFO
+DEBUG_LEVEL: TRACE
+
+# Node environment, default = production
+NODE_ENV: production
+```
+
 ### Private TLS Certificate
 If your Mattermost instance uses a TLS certificate signed by a private CA, you
 will need to provide the CA's public root to the container for validation.
