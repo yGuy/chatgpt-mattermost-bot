@@ -1,0 +1,12 @@
+---
+version: '3.7'
+
+services:
+  chatbot:
+    image: yguy/chatgpt-mattermost-bot:latest
+    build: .
+    restart: unless-stopped
+    environment:
+      MATTERMOST_URL: https://mattermost.server
+      MATTERMOST_TOKEN: abababacdcdcd
+      OPENAI_API_KEY: sk-234234234234234234

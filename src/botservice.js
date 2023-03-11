@@ -2,6 +2,7 @@ const WebSocketClient = require('@mattermost/client').WebSocketClient
 const Client4 = require('@mattermost/client').Client4
 const continueThread = require('./openai-thread-completion').continueThread
 const mattermostToken = process.env['MATTERMOST_TOKEN']
+const { Log } = require('debug-level')
 
 require('babel-polyfill');
 require('isomorphic-fetch');
@@ -14,6 +15,10 @@ if (!global.FormData) {
     global.FormData = function Dummy() {}
 }
 
+Log.options({json: true, colors: true})
+Log.wrapConsole('bot-ws', {level4log: 'INFO'})
+const log = new Log('bot')
+
 const client = new Client4()
 let matterMostURLString = process.env["MATTERMOST_URL"];
 client.setUrl(matterMostURLString)
@@ -23,7 +28,7 @@ const wsClient = new WebSocketClient();
 let meId = null;
 client.getMe().then(me => meId = me.id)
 
-const name = "@chatgpt";
+const name = process.env['MATTERMOST_BOTNAME'] || '@chatgpt'
 
 wsClient.addMessageListener(async function (event) {
     if (['posted'].includes(event.event) && meId) {
@@ -47,6 +52,7 @@ wsClient.addMessageListener(async function (event) {
 
                 let assistantCount = 0;
                 posts.forEach(threadPost => {
+                    log.trace({msg: threadPost})
                     if (threadPost.user_id === meId) {
                         chatmessages.push({role: "assistant", content: threadPost.message})
                         assistantCount++
@@ -69,11 +75,12 @@ wsClient.addMessageListener(async function (event) {
                         channel_id: post.channel_id,
                         root_id: post.root_id || post.id
                     })
+                    log.trace({msg: newPost})
                 }
             }
         }
     } else {
-        //console.log(event)
+        log.debug({msg: event})
     }
 });
 
@@ -83,7 +90,7 @@ const wsUrl = `${matterMostURL.protocol === 'https:' ? 'wss' : 'ws'}://${matterM
 new Promise((resolve, reject) => {
     wsClient.addCloseListener(connectFailCount => reject())
     wsClient.addErrorListener(event => { reject(event) })
-}).then(() => process.exit(0)).catch(reason => { console.error(reason); process.exit(-1)})
+}).then(() => process.exit(0)).catch(reason => { log.error(reason); process.exit(-1)})
 
 wsClient.initialize(wsUrl, mattermostToken)
 

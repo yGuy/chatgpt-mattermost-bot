@@ -10,7 +10,7 @@ You need
 
 First step is to clone this repo.
 
-```
+```bash
 git clone https://github.com/yGuy/chatgpt-mattermost-bot.git && cd chatgpt-mattermost-bot
 ```
 
@@ -18,13 +18,14 @@ For testing, you could now just run `npm install` and `npm run start` or `node s
 
 For production use, in order to create a service on a docker container that will always provide the service without you having to run it on your own PC, you can do the following:
 
+## Docker
 Create the docker image
-```
+```bash
 docker build . -t yguy/chatgpt-mattermost-bot
 ```
 
 Run Docker service
-```
+```bash
 docker run -d --restart unless-stopped \
   -e MATTERMOST_URL=https://mattermost.server \
   -e MATTERMOST_TOKEN=abababacdcdcd \
@@ -34,7 +35,7 @@ docker run -d --restart unless-stopped \
 ```
 
 With a custom certificate stored in `/absolutepath/to/certfile.crt´ for your mattermost instance (if required for locally hosted mattermost instances on https) you can do it like so
-```
+```bash
 docker run -d --restart unless-stopped \
   -v /absolutepath/to/certfile.crt:/certs/certfile.crt \
   -e NODE_EXTRA_CA_CERTS=/certs/certfile.crt \
@@ -46,14 +47,70 @@ docker run -d --restart unless-stopped \
 ```
 
 Verify it's running
-```
+```bash
 docker ps
 ```
 
 Later, to stop the service
-```
+```bash
 docker stop chatbot
 ```
+
+## Docker Compose
+Edit the environment variables in `docker-compose.yml`.
+
+### Required Environment Variables
+```yaml
+MATTERMOST_URL: https://mattermost.server
+MATTERMOST_TOKEN: abababacdcdcd
+OPENAI_API_KEY: sk-234234234234234234
+```
+
+### Optional Environment Variables
+```yaml
+# Set this if using a custom username for the bot, default = @chatgpt
+MATTERMOST_BOTNAME: "@chatgpt"
+
+# Console logging output level, default = INFO
+DEBUG_LEVEL: TRACE
+
+# Node environment, default = production
+NODE_ENV: production
+```
+
+### Private TLS Certificate
+If your Mattermost instance uses a TLS certificate signed by a private CA, you
+will need to provide the CA's public root to the container for validation.
+
+If the root certificate is located at `/absolutepath/to/certfile.crt`, then you
+would merge the contents below into the `docker-compose.yml` file:
+```yaml
+services:
+  chatbot:
+    volumes:
+      - /absolutepath/to/certfile.crt:/certs/certfile.crt:ro
+    environment:
+      NODE_EXTRA_CA_CERTS: /certs/certfile.crt
+```
+
+### Run the container as a daemon
+When all configuration is complete, start the container service.
+```bash
+docker compose up -d
+```
+
+Verify it's running:
+```bash
+docker compose ps
+```
+
+To stop the container:
+```bash
+docker compose down
+```
+
+
+## Example Conversation
 
 Here's an example chat that I just had with our bot:
 
