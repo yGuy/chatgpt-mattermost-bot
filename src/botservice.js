@@ -46,7 +46,7 @@ wsClient.addMessageListener(async function (event) {
 
                 const thread = await client.getPostThread(post.id, true, false, true)
 
-                const posts = thread.order.map(id => thread.posts[id])
+                const posts = [...new Set(thread.order)].map(id => thread.posts[id])
                     .filter(a => a.create_at > Date.now() - 1000 * 60 * 60 * 24 * 1)
                     .sort((a, b) => a.create_at - b.create_at)
 
