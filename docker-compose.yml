@@ -3,7 +3,7 @@ version: '3.7'
 
 services:
   chatbot:
-    image: yguy/chatgpt-mattermost-bot:latest
+    image: ghcr.io/yguy/chatgpt-mattermost-bot:latest
     build: .
     restart: unless-stopped
     environment:
