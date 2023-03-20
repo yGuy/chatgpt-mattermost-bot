@@ -5,7 +5,7 @@ WORKDIR /app
 COPY [ "package.json", "package-lock.json", "./" ]
 COPY [ "src/", "./src/" ]
 
-RUN npm install --omit dev
+RUN npm ci --omit dev
 
 
 # NPM runtime image
