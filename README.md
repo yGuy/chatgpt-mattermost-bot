@@ -25,6 +25,10 @@ or when [running the docker image](#using-the-ready-made-image) or when configur
  | MATTERMOST_BOTNAME  | no       | `"@chatgpt"`                | the name of the bot user in Mattermost, defaults to '@chatgpt'                                  |
  | DEBUG_LEVEL         | no       | `TRACE`                     | a debug level used for logging activity, defaults to `INFO`                                     |
 
+## Building and running the Dalai Server
+If you do not want to use the OpenAI service, you can build and run your own language model on premise. 
+Just run the [Dalai](https://cocktailpeanut.github.io/dalai) server. I have a preconfigured [`dalai/Dockerfile`](./dalai/Dockerfile) that you can use. It will builds a while and requires a beefy Docker machine with quite a bit of RAM (16 to 32 GB work well, and no GPU is required/supported?), but it works quite well. Run the server (the image by default exposes the server on port 3000) and then specify the `DALAI_SERVER_URL` when launching the bot software. 
+
 **Warning**
 If you are using the Dalai server, be sure to adhere to the licensing of the model data. It may not be used for many purposes, other than research! Specifically not in a commercial context. But IANAL. You are responsible for using the software in accordance with the license!
 
