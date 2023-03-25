@@ -1,11 +1,12 @@
-# A ChatGPT-powered Chatbot for Mattermost
+# A ChatGPT-or-LLaMa-powered Chatbot for Mattermost
 
 Here's how to get the bot running - it's easy if you have a Docker server.
 
 You need
  - the [Mattermost token](https://docs.mattermost.com/integrations/cloud-bot-accounts.html) for the bot user (`@chatgpt` by default)
  - the [OpenAI API key](https://platform.openai.com/account/api-keys)
- - a [Docker](https://www.docker.com/) server for continuously running the service, alternatively for testing, Node.js is sufficient.
+ - or alternatively to the above key a running [Dalai Server](https://cocktailpeanut.github.io/dalai/#/?id=docker-compose)(Shoutout to [@cocktailpeanut](https://github.com/cocktailpeanut))
+ - a [Docker](https://www.docker.com/) server for continuously running the services, alternatively for testing, Node.js is sufficient.
 
 There's a guide about how to do the first two steps written by @InterestingSoup, [here](https://interestingsoup.com/create-a-chatgpt-bot-on-mattermost/) (lots of ads on that page, just block them, ignore them, or keep on reading and try without their screenshots!)
 
@@ -14,19 +15,22 @@ There's a guide about how to do the first two steps written by @InterestingSoup,
 These are the available options, you can set them as environment variables when running [the script](./src/botservice.js)
 or when [running the docker image](#using-the-ready-made-image) or when configuring your [docker-compose](#docker-compose) file.
 
-| Name                | Required | Example Value               | Description                                                                                  |
-|---------------------|----------|-----------------------------|----------------------------------------------------------------------------------------------|
-| MATTERMOST_URL      | yes      | `https://mattermost.server` | The URL to the server. This is used for connecting the bot to the Mattermost API             |
-| MATTERMOST_TOKEN    | yes      | `abababacdcdcd`             | The authentication token from the logged in mattermost bot                                   |
-| OPENAI_API_KEY      | yes      | `sk-234234234234234234`     | The OpenAI API key to authenticate with OpenAI                                               |
- | NODE_EXTRA_CA_CERTS | no       | `/file/to/cert.crt`         | a link to a certificate file to pass to node.js for authenticating self-signed certificates  |
- | MATTERMOST_BOTNAME  | no       | `"@chatgpt"`                | the name of the bot user in Mattermost, defaults to '@chatgpt'                               |
- | DEBUG_LEVEL         | no       | `TRACE`                     | a debug level used for logging activity, defaults to `INFO`                                  |
+| Name                | Required | Example Value               | Description                                                                                     |
+|---------------------|----------|-----------------------------|-------------------------------------------------------------------------------------------------|
+| MATTERMOST_URL      | yes      | `https://mattermost.server` | The URL to the server. This is used for connecting the bot to the Mattermost API                |
+| MATTERMOST_TOKEN    | yes      | `abababacdcdcd`             | The authentication token from the logged in mattermost bot                                      |
+| OPENAI_API_KEY      | (yes)    | `sk-234234234234234234`     | The OpenAI API key to authenticate with OpenAI. If not specified, DALAI_SERVER_URL is required. |
+| DALAI_SERVER_URL    | (no)     | `http://localhost:3000`     | The URL to a running DALAI Server. If specified, the bot will not use OpenAI.                   |
+ | NODE_EXTRA_CA_CERTS | no       | `/file/to/cert.crt`         | a link to a certificate file to pass to node.js for authenticating self-signed certificates     |
+ | MATTERMOST_BOTNAME  | no       | `"@chatgpt"`                | the name of the bot user in Mattermost, defaults to '@chatgpt'                                  |
+ | DEBUG_LEVEL         | no       | `TRACE`                     | a debug level used for logging activity, defaults to `INFO`                                     |
 
+**Warning**
+If you are using the Dalai server, be sure to adhere to the licensing of the model data. It may not be used for many purposes, other than research! Specifically not in a commercial context. But IANAL. You are responsible for using the software in accordance with the license!
 
 ## Using the ready-made image
 
-Use the prebuilt image from [`ghcr.io/yguy/chatgpt-mattermost-bot`](https://ghcr.io/yguy/chatgpt-mattermost-bot)
+For the OpenAI bot, Use the prebuilt image from [`ghcr.io/yguy/chatgpt-mattermost-bot`](https://ghcr.io/yguy/chatgpt-mattermost-bot)
 
 ```bash
 docker run -d --restart unless-stopped \

@@ -1,8 +1,16 @@
 const WebSocketClient = require('@mattermost/client').WebSocketClient
 const Client4 = require('@mattermost/client').Client4
-const continueThread = require('./openai-thread-completion').continueThread
+
+let continueThread
+if (process.env['DALAI_SERVER_URL']){
+    continueThread = require('./dalai-server-thread-completion').continueThread
+} else {
+    continueThread = require('./openai-thread-completion').continueThread
+}
+
 const mattermostToken = process.env['MATTERMOST_TOKEN']
-const { Log } = require('debug-level')
+
+const { log } = require('./loggging')
 
 require('babel-polyfill');
 require('isomorphic-fetch');
@@ -14,10 +22,6 @@ if (!global.WebSocket) {
 if (!global.FormData) {
     global.FormData = function Dummy() {}
 }
-
-Log.options({json: true, colors: true})
-Log.wrapConsole('bot-ws', {level4log: 'INFO'})
-const log = new Log('bot')
 
 const client = new Client4()
 let matterMostURLString = process.env["MATTERMOST_URL"];
