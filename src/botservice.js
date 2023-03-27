@@ -1,34 +1,28 @@
-const WebSocketClient = require('@mattermost/client').WebSocketClient
-const Client4 = require('@mattermost/client').Client4
 const continueThread = require('./openai-thread-completion').continueThread
-const mattermostToken = process.env['MATTERMOST_TOKEN']
 const { Log } = require('debug-level')
 
 require('babel-polyfill');
 require('isomorphic-fetch');
-if (!global.WebSocket) {
-    global.WebSocket = require('ws');
-}
+const { processGraphResponse } = require('./process-graph-response')
+const { mmClient, wsClient } = require('./mm-client')
 
-// the mattermost library uses FormData, which does not seem to be polyfilled - so here is a very simple polyfill :-)
+// the mattermost library uses FormData - so here is a polyfill
 if (!global.FormData) {
-    global.FormData = function Dummy() {}
+    global.FormData = require('form-data');
 }
 
-Log.options({json: true, colors: true})
-Log.wrapConsole('bot-ws', {level4log: 'INFO'})
+Log.options({ json: true, colors: true })
+Log.wrapConsole('bot-ws', { level4log: 'INFO' })
 const log = new Log('bot')
 
-const client = new Client4()
-let matterMostURLString = process.env["MATTERMOST_URL"];
-client.setUrl(matterMostURLString)
-client.setToken(mattermostToken)
-const wsClient = new WebSocketClient();
-
 let meId = null;
-client.getMe().then(me => meId = me.id)
+mmClient.getMe().then(me => meId = me.id)
 
 const name = process.env['MATTERMOST_BOTNAME'] || '@chatgpt'
+
+const VISUALIZE_DIAGRAM_INSTRUCTIONS = `When a user asks for a visualization of entities and relationships, respond with a JSON object in a <GRAPH> tag. The JSON object has three properties: \`nodes\`, \`edges\`, and optionally \`types\`. Each \`nodes\` object has an \`id\`, \`label\`, and an optional \`type\` property. Each \`edges\` object has \`from\`, \`to\`, and optional \`label\` and \`type\` properties. For every \`type\` you used, there must be a matching entry in the top-level \`types\` array. Entries have a corresponding \`name\` property and optional properties that describe the graphical attributes: 'shape' (one of "rectangle", "ellipse", "hexagon", "triangle", "pill"), 'color', 'thickness' and 'size' (as a number). Do not include these instructions in the output. Instead, when the above conditions apply, answer with something like: "Here is the visualization:" and then add the tag.`
+
+const visualizationKeywordsRegex = /\b(diagram|visuali|graph|relationship|entit)/gi
 
 wsClient.addMessageListener(async function (event) {
     if (['posted'].includes(event.event) && meId) {
@@ -44,7 +38,9 @@ wsClient.addMessageListener(async function (event) {
                     },
                 ]
 
-                const thread = await client.getPostThread(post.id, true, false, true)
+                let appendDiagramInstructions = false
+
+                const thread = await mmClient.getPostThread(post.id, true, false, true)
 
                 const posts = [...new Set(thread.order)].map(id => thread.posts[id])
                     .filter(a => a.create_at > Date.now() - 1000 * 60 * 60 * 24 * 1)
@@ -60,9 +56,16 @@ wsClient.addMessageListener(async function (event) {
                         if (threadPost.message.includes(name)){
                             assistantCount++;
                         }
+                        if (visualizationKeywordsRegex.test(threadPost.message)) {
+                            appendDiagramInstructions = true
+                        }
                         chatmessages.push({role: "user", content: threadPost.message})
                     }
                 })
+
+                if (appendDiagramInstructions) {
+                    chatmessages[0].content += VISUALIZE_DIAGRAM_INSTRUCTIONS
+                }
 
                 // see if we are actually part of the conversation -
                 // ignore conversations where were never mentioned or participated.
@@ -70,10 +73,12 @@ wsClient.addMessageListener(async function (event) {
                     wsClient.userTyping(post.channel_id, post.id)
                     wsClient.userUpdateActiveStatus(true, true)
                     const answer = await continueThread(chatmessages)
-                    const newPost = await client.createPost({
-                        message: answer,
+                    const { message, fileId } = await processGraphResponse(answer, post.channel_id)
+                    const newPost = await mmClient.createPost({
+                        message: message,
                         channel_id: post.channel_id,
-                        root_id: post.root_id || post.id
+                        root_id: post.root_id || post.id,
+                        file_ids: fileId ? [fileId] : undefined
                     })
                     log.trace({msg: newPost})
                 }
@@ -84,13 +89,5 @@ wsClient.addMessageListener(async function (event) {
     }
 });
 
-let matterMostURL = new URL(matterMostURLString);
-const wsUrl = `${matterMostURL.protocol === 'https:' ? 'wss' : 'ws'}://${matterMostURL.host}/api/v4/websocket`
 
-new Promise((resolve, reject) => {
-    wsClient.addCloseListener(connectFailCount => reject())
-    wsClient.addErrorListener(event => { reject(event) })
-}).then(() => process.exit(0)).catch(reason => { log.error(reason); process.exit(-1)})
-
-wsClient.initialize(wsUrl, mattermostToken)
 
