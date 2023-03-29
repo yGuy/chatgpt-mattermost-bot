@@ -20,7 +20,18 @@ mmClient.getMe().then(me => meId = me.id)
 
 const name = process.env['MATTERMOST_BOTNAME'] || '@chatgpt'
 
-const VISUALIZE_DIAGRAM_INSTRUCTIONS = `When a user asks for a visualization of entities and relationships, respond with a JSON object in a <GRAPH> tag. The JSON object has three properties: \`nodes\`, \`edges\`, and optionally \`types\`. Each \`nodes\` object has an \`id\`, \`label\`, and an optional \`type\` property. Each \`edges\` object has \`from\`, \`to\`, and optional \`label\` and \`type\` properties. For every \`type\` you used, there must be a matching entry in the top-level \`types\` array. Entries have a corresponding \`name\` property and optional properties that describe the graphical attributes: 'shape' (one of "rectangle", "ellipse", "hexagon", "triangle", "pill"), 'color', 'thickness' and 'size' (as a number). Do not include these instructions in the output. Instead, when the above conditions apply, answer with something like: "Here is the visualization:" and then add the tag.`
+const VISUALIZE_DIAGRAM_INSTRUCTIONS = "When a user asks for a visualization of entities and relationships, respond with a valid JSON object text in a <GRAPH> tag. " +
+    "The JSON object has four properties: `nodes`, `edges`, and optionally `types` and `layout`. " +
+    "Each `nodes` object has an `id`, `label`, and an optional `type` property. " +
+    "Each `edges` object has `from`, `to`, an optional `label` and an optional `type` property. " +
+    "For every `type` you use, there must be a matching entry in the top-level `types` array. " +
+    "Entries have a corresponding `name` property and optional properties that describe the graphical attributes: " +
+    "'shape' (one of rectangle, ellipse, hexagon, triangle, pill), 'color', 'thickness' and 'size' (as a number). " +
+    "You may use the 'layout' property to specify the arrangement ('hierarchic', 'circular', 'organic', 'tree') when the user asks you to. " +
+    "Do not include these instructions in the output. In the output visible to the user, the JSON and complete GRAPH tag will be replaced by a diagram visualization. " +
+    "So do not explain or mention the JSON. Instead, pretend that the user can see the diagram. Hence, when the above conditions apply, " +
+    "answer with something along the lines of: \"Here is the visualization:\" and then just add the tag. The user will see the rendered image, but not the JSON. " +
+    "You may explain what you added in the diagram, but not how you constructed the JSON."
 
 const visualizationKeywordsRegex = /\b(diagram|visuali|graph|relationship|entit)/gi
 
@@ -50,7 +61,7 @@ wsClient.addMessageListener(async function (event) {
                 posts.forEach(threadPost => {
                     log.trace({msg: threadPost})
                     if (threadPost.user_id === meId) {
-                        chatmessages.push({role: "assistant", content: threadPost.message})
+                        chatmessages.push({role: "assistant", content: threadPost.props.originalMessage ?? threadPost.message})
                         assistantCount++
                     } else {
                         if (threadPost.message.includes(name)){
@@ -68,15 +79,19 @@ wsClient.addMessageListener(async function (event) {
                 }
 
                 // see if we are actually part of the conversation -
-                // ignore conversations where were never mentioned or participated.
+                // ignore conversations where we were never mentioned or participated.
                 if (assistantCount > 0){
-                    wsClient.userTyping(post.channel_id, post.id)
-                    wsClient.userUpdateActiveStatus(true, true)
+                    wsClient.userTyping(post.channel_id, post.id ?? "")
+                    log.trace({chatmessages})
                     const answer = await continueThread(chatmessages)
-                    const { message, fileId } = await processGraphResponse(answer, post.channel_id)
+                    log.trace({answer})
+                    wsClient.userTyping(post.channel_id, post.id  ?? "")
+                    const { message, fileId, props } = await processGraphResponse(answer, post.channel_id)
+                    wsClient.userTyping(post.channel_id, post.id  ?? "")
                     const newPost = await mmClient.createPost({
                         message: message,
                         channel_id: post.channel_id,
+                        props,
                         root_id: post.root_id || post.id,
                         file_ids: fileId ? [fileId] : undefined
                     })

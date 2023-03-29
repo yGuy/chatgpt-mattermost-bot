@@ -1,5 +1,7 @@
 # A ChatGPT-powered Chatbot for Mattermost
 
+![A chat window in Mattermost showing the chat between the OpenAI bot and "yGuy"](./mattermost-chat.png)
+
 Here's how to get the bot running - it's easy if you have a Docker server.
 
 You need
@@ -14,15 +16,23 @@ There's a guide about how to do the first two steps written by @InterestingSoup,
 These are the available options, you can set them as environment variables when running [the script](./src/botservice.js)
 or when [running the docker image](#using-the-ready-made-image) or when configuring your [docker-compose](#docker-compose) file.
 
-| Name                | Required | Example Value               | Description                                                                                  |
-|---------------------|----------|-----------------------------|----------------------------------------------------------------------------------------------|
-| MATTERMOST_URL      | yes      | `https://mattermost.server` | The URL to the server. This is used for connecting the bot to the Mattermost API             |
-| MATTERMOST_TOKEN    | yes      | `abababacdcdcd`             | The authentication token from the logged in mattermost bot                                   |
-| OPENAI_API_KEY      | yes      | `sk-234234234234234234`     | The OpenAI API key to authenticate with OpenAI                                               |
- | NODE_EXTRA_CA_CERTS | no       | `/file/to/cert.crt`         | a link to a certificate file to pass to node.js for authenticating self-signed certificates  |
- | MATTERMOST_BOTNAME  | no       | `"@chatgpt"`                | the name of the bot user in Mattermost, defaults to '@chatgpt'                               |
- | DEBUG_LEVEL         | no       | `TRACE`                     | a debug level used for logging activity, defaults to `INFO`                                  |
+| Name                | Required | Example Value               | Description                                                                                 |
+|---------------------|----------|-----------------------------|---------------------------------------------------------------------------------------------|
+| MATTERMOST_URL      | yes      | `https://mattermost.server` | The URL to the server. This is used for connecting the bot to the Mattermost API            |
+| MATTERMOST_TOKEN    | yes      | `abababacdcdcd`             | The authentication token from the logged in mattermost bot                                  |
+| OPENAI_API_KEY      | yes      | `sk-234234234234234234`     | The OpenAI API key to authenticate with OpenAI                                              |
+| OPENAI_MODEL_NAME   | no       | `gpt-3.5-turbo`             | The OpenAI language model to use, defaults to `gpt-3.5-turbo`                               |
+| OPENAI_MAX_TOKENS   | no       | `2000`                      | The maximum number of tokens to pass to the OpenAI API, defaults to 2000                    |
+ | YFILES_SERVER_URL   | no       | `http://localhost:3835`     | The URL to the yFiles graph service for embedding auto-generated diagrams.                  |
+ | NODE_EXTRA_CA_CERTS | no       | `/file/to/cert.crt`         | a link to a certificate file to pass to node.js for authenticating self-signed certificates |
+ | MATTERMOST_BOTNAME  | no       | `"@chatgpt"`                | the name of the bot user in Mattermost, defaults to '@chatgpt'                              |
+ | DEBUG_LEVEL         | no       | `TRACE`                     | a debug level used for logging activity, defaults to `INFO`                                 |
 
+> **Note**
+> The `YFILES_SERVER_URL` is used for automatically converting text information created by the bot into diagrams.
+> This is currently in development. You can see it in action, here: 
+> [LinkedIn Post](https://www.linkedin.com/posts/yguy_chatgpt-yfiles-diagramming-activity-7046713027005407232-2bKH)
+> If you are interested in getting your hands on the plugin, please contact [yWorks](https://www.yworks.com)!
 
 ## Using the ready-made image
 

@@ -32,7 +32,14 @@ async function processGraphResponse (content, channelId) {
       const pre = content.substring(0, replaceStart)
       const post = content.substring(replaceEnd)
 
-      result.message = `${pre} [see attached image] ${post}`
+      if (post.trim().length < 1){
+        result.message = pre
+      } else {
+        result.message = `${pre} [see attached image] ${post}`
+      }
+
+      result.props = {originalMessage: content}
+
       result.fileId = fileId
     } catch (e) {
       log.error(e)
@@ -64,7 +71,9 @@ async function jsonToFileId (jsonString, channelId) {
   const form = new FormData()
   form.append('channel_id', channelId);
   form.append('files', Buffer.from(svgString), 'diagram.svg');
+  log.trace('Appending Diagram SVG', svgString)
   const response = await mmClient.uploadFile(form)
+  log.trace('Uploaded a file with id', response.file_infos[0].id)
   return response.file_infos[0].id
 }
 
