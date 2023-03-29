@@ -4,7 +4,7 @@ const { Log } = require('debug-level')
 const log = new Log('bot')
 
 const yFilesGPTServerUrl = process.env['YFILES_SERVER_URL']
-const yFilesEndpoint = new URL('/json-to-svg', yFilesGPTServerUrl)
+const yFilesEndpoint = yFilesGPTServerUrl ? new URL('/json-to-svg', yFilesGPTServerUrl) : undefined
 
 /**\
  * @param {string} content
