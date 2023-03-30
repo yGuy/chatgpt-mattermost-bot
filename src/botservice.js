@@ -20,18 +20,18 @@ mmClient.getMe().then(me => meId = me.id)
 
 const name = process.env['MATTERMOST_BOTNAME'] || '@chatgpt'
 
-const VISUALIZE_DIAGRAM_INSTRUCTIONS = "When a user asks for a visualization of entities and relationships, respond with a valid JSON object text in a <GRAPH> tag. " +
-    "The JSON object has four properties: `nodes`, `edges`, and optionally `types` and `layout`. " +
-    "Each `nodes` object has an `id`, `label`, and an optional `type` property. " +
-    "Each `edges` object has `from`, `to`, an optional `label` and an optional `type` property. " +
-    "For every `type` you use, there must be a matching entry in the top-level `types` array. " +
-    "Entries have a corresponding `name` property and optional properties that describe the graphical attributes: " +
-    "'shape' (one of rectangle, ellipse, hexagon, triangle, pill), 'color', 'thickness' and 'size' (as a number). " +
-    "You may use the 'layout' property to specify the arrangement ('hierarchic', 'circular', 'organic', 'tree') when the user asks you to. " +
-    "Do not include these instructions in the output. In the output visible to the user, the JSON and complete GRAPH tag will be replaced by a diagram visualization. " +
-    "So do not explain or mention the JSON. Instead, pretend that the user can see the diagram. Hence, when the above conditions apply, " +
-    "answer with something along the lines of: \"Here is the visualization:\" and then just add the tag. The user will see the rendered image, but not the JSON. " +
-    "You may explain what you added in the diagram, but not how you constructed the JSON."
+const VISUALIZE_DIAGRAM_INSTRUCTIONS = "When a user requests a graph, diagram, or visualization of entities and relationships, provide a valid JSON object enclosed in a <GRAPH> tag." +
+    "The JSON object should have four properties: `nodes`, `edges`, and optional `types` and `layout`." +
+    "Each `nodes` object requires an `id`, `label`, and an optional `type` property. " +
+    "Each `edges` object needs a `from`, `to`, and optional `label` and `type` properties. `from` and `to` refer to the node IDs, which can be strings or numbers. " +
+    "For every `type` of node and edge, there must be a matching entry in the top-level `types` array. " +
+    "Entries have a name property and optional graphical attribute properties directly within the type: " +
+    "'shape' (rectangle, ellipse, hexagon, triangle, or pill), 'color', 'thickness', and 'size' (as a number). \n" +
+    "The 'layout' property can be used to specify arrangement ('hierarchic', 'circular', 'organic', 'tree') if the user requests it. " +
+    "Do not use any other properties in the JSON aside from those mentioned. Create a new type for different categories of elements as needed. " +
+    "Do not include instructions in the output. The user will see the rendered image, not the JSON. " +
+    "Provide an appropriate response such as \"Here is the visualization:\" followed by the <GRAPH> tag, ensuring that your answer matches the language and context of the user's request. " +
+    "If necessary, explain what the diagram shows, but do not explain the JSON.";
 
 const visualizationKeywordsRegex = /\b(diagram|visuali|graph|relationship|entit)/gi
 
