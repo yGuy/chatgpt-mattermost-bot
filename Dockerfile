@@ -19,8 +19,8 @@ ENV NODE_ENV $NODE_ENV
 # Avoid running as root:
 USER node
 
-COPY --from=npm_builder [ "/app/node_modules/", "./node_modules/" ]
-COPY --from=npm_builder [ "/app/src/", "./src/" ]
-COPY [ "./license.md", "./" ]
+COPY --chown=node:node --from=npm_builder [ "/app/node_modules/", "./node_modules/" ]
+COPY --chown=node:node --from=npm_builder [ "/app/src/", "./src/" ]
+COPY --chown=node:node [ "./license.md", "./" ]
 
 ENTRYPOINT [ "node", "src/botservice.js" ]
