@@ -19,6 +19,7 @@ let meId = null;
 mmClient.getMe().then(me => meId = me.id)
 
 const name = process.env['MATTERMOST_BOTNAME'] || '@chatgpt'
+const replyOnTag = (process.env['MATTERMOST_REPLY_ON_TAG'] === "true")
 
 const VISUALIZE_DIAGRAM_INSTRUCTIONS = "When a user asks for a visualization of entities and relationships, respond with a valid JSON object text in a <GRAPH> tag. " +
     "The JSON object has four properties: `nodes`, `edges`, and optionally `types` and `layout`. " +
@@ -38,8 +39,11 @@ const visualizationKeywordsRegex = /\b(diagram|visuali|graph|relationship|entit)
 wsClient.addMessageListener(async function (event) {
     if (['posted'].includes(event.event) && meId) {
         const post = JSON.parse(event.data.post);
-        if (post.root_id === "" && (!event.data.mentions || (!JSON.parse(event.data.mentions).includes(meId)))) {
-            // we're not in a thread and we are not mentioned - ignore the message
+        const isBotMentioned = (event.data.mentions && (JSON.parse(event.data.mentions).includes(meId)))
+        const isChannelDm = (event.data.channel_type === "D")
+
+        if (!isChannelDm && ((post.root_id === "" || replyOnTag) && !isBotMentioned)) {
+            // we're not in DM, or a thread and we are not mentioned - ignore the message
         } else {
             if (post.user_id !== meId) {
                 const chatmessages = [
@@ -80,7 +84,7 @@ wsClient.addMessageListener(async function (event) {
 
                 // see if we are actually part of the conversation -
                 // ignore conversations where we were never mentioned or participated.
-                if (assistantCount > 0){
+                if (assistantCount > 0 || isChannelDm){
                     wsClient.userTyping(post.channel_id, post.id ?? "")
                     log.trace({chatmessages})
                     const answer = await continueThread(chatmessages)
@@ -103,6 +107,3 @@ wsClient.addMessageListener(async function (event) {
         log.debug({msg: event})
     }
 });
-
-
-

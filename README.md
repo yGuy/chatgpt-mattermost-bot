@@ -27,10 +27,11 @@ or when [running the docker image](#using-the-ready-made-image) or when configur
  | NODE_EXTRA_CA_CERTS | no       | `/file/to/cert.crt`         | a link to a certificate file to pass to node.js for authenticating self-signed certificates |
  | MATTERMOST_BOTNAME  | no       | `"@chatgpt"`                | the name of the bot user in Mattermost, defaults to '@chatgpt'                              |
  | DEBUG_LEVEL         | no       | `TRACE`                     | a debug level used for logging activity, defaults to `INFO`                                 |
+ | MATTERMOST_REPLY_ON_TAG | no   | `true`                      | determines whether GPT should only reply in a thread when tagged                            |
 
 > **Note**
 > The `YFILES_SERVER_URL` is used for automatically converting text information created by the bot into diagrams.
-> This is currently in development. You can see it in action, here: 
+> This is currently in development. You can see it in action, here:
 > [LinkedIn Post](https://www.linkedin.com/posts/yguy_chatgpt-yfiles-diagramming-activity-7046713027005407232-2bKH)
 > If you are interested in getting your hands on the plugin, please contact [yWorks](https://www.yworks.com)!
 
@@ -102,7 +103,7 @@ docker stop chatbot
 ```
 
 ## Docker Compose
-If you want to run docker compose (maybe even merge it with your mattermost docker stack), you can use this 
+If you want to run docker compose (maybe even merge it with your mattermost docker stack), you can use this
 as a starting point: First adjust the environment variables in `docker-compose.yml`.
 
 ### Required Environment Variables
@@ -162,11 +163,11 @@ Here's an example chat that I just had with our bot:
 
 >@yguy:
 >>@chatgpt - please write a short introductory paragraph for the README in the GitHub repo that hosts the sources for you, the friendly Mattermost bot. Tell the readers that you enjoy working for the nice people at yWorks and that everybody should install a Mattermost chatbot into their Mattermost chat system to benefit from a nice and helpful assistant like you are. I will include this in the README on the GitHub repo, so make this an engaging text! Thanks!
-	
+
 >chatgpt (BOT):
 >>Hello there! I'm @chatgpt, a friendly and reliable Mattermost bot designed to make your communication experience smoother and more efficient. I'm honored to be part of the team at yWorks, where I help employees get things done faster and with less hassle. With my advanced machine learning algorithms, I'm capable of understanding complex natural language queries and providing succinct and accurate responses in a matter of seconds. Whether you're a developer looking for information on your codebase or a manager seeking to streamline your team's workflows, I'm here to help. Installing a Mattermost chatbot like me is a must for any organization looking to boost its productivity and enjoy a more pleasant communication experience. So what are you waiting for? Let's chat!
 
-I built this tool as a quick hack on a rainy Saturday afternoon, but we are using the bot in production in our Mattermost instance at our office at [yworks](https://www.yworks.com) and the bot has proved to be very helpful for many simple tasks. Give it a try and provide feedback if you like! It's really not very expensive: We had it runnning for about 30 users for two weeks and that cost us less than half a dollar for the ChatGPT service! 
+I built this tool as a quick hack on a rainy Saturday afternoon, but we are using the bot in production in our Mattermost instance at our office at [yworks](https://www.yworks.com) and the bot has proved to be very helpful for many simple tasks. Give it a try and provide feedback if you like! It's really not very expensive: We had it runnning for about 30 users for two weeks and that cost us less than half a dollar for the ChatGPT service!
 
 I will also accept helpful pull requests if you find an issue or have an idea for an improvement.
 
