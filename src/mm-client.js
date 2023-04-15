@@ -16,7 +16,8 @@ client.setToken(mattermostToken)
 
 const wsClient = new WebSocketClient();
 let matterMostURL = new URL(matterMostURLString);
-const wsUrl = `${matterMostURL.protocol === 'https:' ? 'wss' : 'ws'}://${matterMostURL.host}/api/v4/websocket`
+const pathname = matterMostURL.pathname.replace(/\/+$/, '');
+const wsUrl = `${matterMostURL.protocol === 'https:' ? 'wss' : 'ws'}://${matterMostURL.host}${pathname}/api/v4/websocket`
 
 new Promise((resolve, reject) => {
   wsClient.addCloseListener(connectFailCount => reject())
