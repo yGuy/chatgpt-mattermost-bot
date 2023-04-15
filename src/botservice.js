@@ -40,8 +40,10 @@ wsClient.addMessageListener(async function (event) {
     if (['posted'].includes(event.event) && meId) {
         const post = JSON.parse(event.data.post);
         const isBotMentioned = (event.data.mentions && (JSON.parse(event.data.mentions).includes(meId)))
-        if ((post.root_id === "" || replyOnTag) && !isBotMentioned) {
-            // we're not in a thread and we are not mentioned - ignore the message
+        const isChannelDm = (event.data.channel_type === "D")
+
+        if (!isChannelDm && ((post.root_id === "" || replyOnTag) && !isBotMentioned)) {
+            // we're not in DM, or a thread and we are not mentioned - ignore the message
         } else {
             if (post.user_id !== meId) {
                 const chatmessages = [
@@ -82,7 +84,7 @@ wsClient.addMessageListener(async function (event) {
 
                 // see if we are actually part of the conversation -
                 // ignore conversations where we were never mentioned or participated.
-                if (assistantCount > 0){
+                if (assistantCount > 0 || isChannelDm){
                     wsClient.userTyping(post.channel_id, post.id ?? "")
                     log.trace({chatmessages})
                     const answer = await continueThread(chatmessages)
