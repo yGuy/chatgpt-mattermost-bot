@@ -16,7 +16,7 @@ client.setToken(mattermostToken)
 
 const wsClient = new WebSocketClient();
 const wsUrl = new URL(client.getWebSocketUrl());
-wsUrl.protocol = wsUrl.protocol === 'https' ? 'wss' : 'ws'
+wsUrl.protocol = wsUrl.protocol === 'https:' ? 'wss' : 'ws'
 
 new Promise((resolve, reject) => {
   wsClient.addCloseListener(connectFailCount => reject())
