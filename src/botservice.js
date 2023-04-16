@@ -81,21 +81,27 @@ wsClient.addMessageListener(async function (event) {
                 // see if we are actually part of the conversation -
                 // ignore conversations where we were never mentioned or participated.
                 if (assistantCount > 0){
-                    wsClient.userTyping(post.channel_id, (post.root_id || post.id) ?? "")
-                    log.trace({chatmessages})
-                    const answer = await continueThread(chatmessages)
-                    log.trace({answer})
-                    wsClient.userTyping(post.channel_id, (post.root_id || post.id) ?? "")
-                    const { message, fileId, props } = await processGraphResponse(answer, post.channel_id)
-                    wsClient.userTyping(post.channel_id, (post.root_id || post.id) ?? "")
-                    const newPost = await mmClient.createPost({
-                        message: message,
-                        channel_id: post.channel_id,
-                        props,
-                        root_id: post.root_id || post.id,
-                        file_ids: fileId ? [fileId] : undefined
-                    })
-                    log.trace({msg: newPost})
+                    const typing = () => wsClient.userTyping(post.channel_id, (post.root_id || post.id) ?? "")
+                    typing()
+                    const typingInterval = setInterval(typing, 2000)
+                    try {
+                        log.trace({chatmessages})
+                        const answer = await continueThread(chatmessages)
+                        log.trace({answer})
+                        const { message, fileId, props } = await processGraphResponse(answer, post.channel_id)
+                        clearInterval(typingInterval)
+                        const newPost = await mmClient.createPost({
+                            message: message,
+                            channel_id: post.channel_id,
+                            props,
+                            root_id: post.root_id || post.id,
+                            file_ids: fileId ? [fileId] : undefined
+                        })
+                        log.trace({msg: newPost})
+                    } catch(e) {
+                        clearInterval(typingInterval)
+                        log.error(e)
+                    }
                 }
             }
         }
