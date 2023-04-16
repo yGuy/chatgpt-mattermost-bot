@@ -15,15 +15,15 @@ client.setUrl(matterMostURLString)
 client.setToken(mattermostToken)
 
 const wsClient = new WebSocketClient();
-let matterMostURL = new URL(matterMostURLString);
-const wsUrl = `${matterMostURL.protocol === 'https:' ? 'wss' : 'ws'}://${matterMostURL.host}/api/v4/websocket`
+const wsUrl = new URL(client.getWebSocketUrl());
+wsUrl.protocol = wsUrl.protocol === 'https' ? 'wss' : 'ws'
 
 new Promise((resolve, reject) => {
   wsClient.addCloseListener(connectFailCount => reject())
   wsClient.addErrorListener(event => { reject(event) })
 }).then(() => process.exit(0)).catch(reason => { log.error(reason); process.exit(-1)})
 
-wsClient.initialize(wsUrl, mattermostToken)
+wsClient.initialize(wsUrl.toString(), mattermostToken)
 
 module.exports = {
   mmClient: client,

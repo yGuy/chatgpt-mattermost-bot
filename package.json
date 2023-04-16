@@ -1,6 +1,6 @@
 {
   "name": "chatgpt-mattermost-bot",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "private": true,
   "scripts": {
     "start": "node ./src/botservice.js"
