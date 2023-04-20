@@ -172,4 +172,9 @@ I will also accept helpful pull requests if you find an issue or have an idea fo
 
 Last but not least, check out [yWorks](https://www.yworks.com)' fine diagramming SDKs for software developers [yFiles](https://yworks.com/yfiles) and our [free online graph and diagram editors](https://yworks.com/editors)!
 
+
+## Add bot to a channel 
+
+You can interact with the `@chatgpt` bot over direct messages. To add the bot to a channel, first add the bot to the team containing the channel. 
+
 This is under MIT license Copyright (c) 2023 Sebastian Mueller (yWorks)
