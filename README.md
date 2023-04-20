@@ -175,6 +175,6 @@ Last but not least, check out [yWorks](https://www.yworks.com)' fine diagramming
 
 ## Add bot to a channel 
 
-You can interact with the `@chatgpt` bot over direct messages. To add the bot to a channel, first add the bot to the team containing the channel. 
+You can interact with the `@chatgpt` bot over direct messages. To add the bot to a channel, first add the bot to the team containing the channel, then add the bot to the channel. 
 
 This is under MIT license Copyright (c) 2023 Sebastian Mueller (yWorks)
