@@ -9,7 +9,10 @@ You need
  - the [OpenAI API key](https://platform.openai.com/account/api-keys)
  - a [Docker](https://www.docker.com/) server for continuously running the service, alternatively for testing, Node.js is sufficient.
 
-There's a guide about how to do the first two steps written by @InterestingSoup, [here](https://interestingsoup.com/create-a-chatgpt-bot-on-mattermost/) (lots of ads on that page, just block them, ignore them, or keep on reading and try without their screenshots!)
+Andrew Zigler from Mattermost created a [YouTube Video](https://www.youtube.com/watch?v=Hx4Ex7YZZiA) that quickly guides you through the setup.
+
+If you want to learn more about how this plugin came to live, [read the blog post at yWorks.com](https://www.yworks.com/blog/diagramming-with-chatgpt)!
+
 
 ## Options
 
