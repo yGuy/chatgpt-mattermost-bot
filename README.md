@@ -13,6 +13,12 @@ Andrew Zigler from Mattermost created a [YouTube Video](https://www.youtube.com/
 
 If you want to learn more about how this plugin came to live, [read the blog post at yWorks.com](https://www.yworks.com/blog/diagramming-with-chatgpt)!
 
+## Dependencies
+
+This project uses JavaScript [OpenAi Node.js Library's](https://www.npmjs.com/package/openai) function
+[`openai.createChatCompletion()`](https://platform.openai.com/docs/api-reference/chat/create) for generating a model
+response to a given message.
+
 
 ## Options
 
