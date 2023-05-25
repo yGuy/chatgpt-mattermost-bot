@@ -9,6 +9,7 @@ const openai = new OpenAIApi(configuration);
 
 const model = process.env["OPENAI_MODEL_NAME"] ?? 'gpt-3.5-turbo'
 const max_tokens = Number(process.env["OPENAI_MAX_TOKENS"] ?? 2000)
+const temperature = Number(process.env["OPENAI_TEMPERATURE"] ?? 1)
 
 async function continueThread(messages) {
   try {
@@ -18,7 +19,7 @@ async function continueThread(messages) {
           max_tokens
       });
       log.trace(response.data?.choices?.[0]?.text);
-      return response.data?.choices?.[0]?.message?.content
+      return response.data?.choices?.[0]?.message?.content;
   } catch (e) {
       if (e.response) {
         log.error(e.response.status);
