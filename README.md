@@ -27,6 +27,10 @@ or when [running the docker image](#using-the-ready-made-image) or when configur
 | OPENAI_MODEL_NAME   | no       | `gpt-3.5-turbo`             | The OpenAI language model to use, defaults to `gpt-3.5-turbo`                               |
 | OPENAI_MAX_TOKENS   | no       | `2000`                      | The maximum number of tokens to pass to the OpenAI API, defaults to 2000                    |
 | OPENAI_TEMPERATURE  | no       | `0.2`                       | The sampling temperature to use, between 0 and 2, defaults to 1. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic. |
+| AZURE_OPENAI_API_KEY | no       | `0123456789abcdefghijklmno` | The Azure OpenAI Service API key to authoenticate                                           |
+| AZURE_OPENAI_API_INSTANCE_NAME   | no | `example-name`        | The instance name on the Azure OpenAI Service                                               |
+| AZURE_OPENAI_API_DEPLOYMENT_NAME | no | `gpt-35-turbo`        | The name of the deployed model on the Azure OpenAI Service                                  |
+| AZURE_OPENAI_API_VERSION         | no | `2023-03-15-preview`  | The Azure OpenAI version                                                                    |
  | YFILES_SERVER_URL   | no       | `http://localhost:3835`     | The URL to the yFiles graph service for embedding auto-generated diagrams.                  |
  | NODE_EXTRA_CA_CERTS | no       | `/file/to/cert.crt`         | a link to a certificate file to pass to node.js for authenticating self-signed certificates |
  | MATTERMOST_BOTNAME  | no       | `"@chatgpt"`                | the name of the bot user in Mattermost, defaults to '@chatgpt'                              |
@@ -50,6 +54,18 @@ docker run -d --restart unless-stopped \
   --name chatbot \
   ghcr.io/yguy/chatgpt-mattermost-bot:latest
 ```
+
+As Azure OpenAI Service case
+```bash
+docker run -d --restart unless-stopped \
+  -e MATTERMOST_URL=https://mattermost.server \
+  -e MATTERMOST_TOKEN=abababacdcdcd \
+  -e AZURE_OPENAI_API_KEY=234234234234234234 \
+  -e AZURE_OPENAI_API_INSTANCE_NAME=example-name \
+  --name chatbot \
+  ghcr.io/yguy/chatgpt-mattermost-bot:latest
+```
+
 
 ## Building the docker image yourself
 
