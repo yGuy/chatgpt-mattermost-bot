@@ -180,7 +180,9 @@ async function main(): Promise<void> {
     const meId = (await mmClient.getMe()).id
 
     for(const plugin of plugins) {
-        registerChatPlugin(plugin)
+        if(plugin.setup()) {
+            registerChatPlugin(plugin)
+        }
     }
 
     wsClient.addMessageListener((e) => onClientMessage(e, meId, log))
