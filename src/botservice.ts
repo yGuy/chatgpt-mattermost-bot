@@ -57,6 +57,7 @@ async function onClientMessage(msg: WebSocketMessage<JSONMessageData>, meId: str
         } else {
             chatmessages.push({
                 role: ChatCompletionRequestMessageRoleEnum.User,
+                name: (await mmClient.getUser(threadPost.user_id)).username,
                 content: threadPost.message
             })
         }
