@@ -5,10 +5,14 @@ import {mmClient} from "../mm-client";
 import {AiResponse, MessageData} from "../types";
 import {createChatCompletion} from "../openai-wrapper";
 
+type GraphPluginArgs = {
+    graphPrompt: string
+}
+
 /**
  * A plugin that creates diagrams with a yFiles service
  */
-export class GraphPlugin extends PluginBase {
+export class GraphPlugin extends PluginBase<GraphPluginArgs> {
     private readonly yFilesGPTServerUrl = process.env['YFILES_SERVER_URL']
     private readonly yFilesEndpoint = this.yFilesGPTServerUrl ? new URL('/json-to-svg', this.yFilesGPTServerUrl) : undefined
 
@@ -28,11 +32,12 @@ export class GraphPlugin extends PluginBase {
 
 
     setup(): boolean {
+        this.addPluginArgument('graphPrompt', 'string', 'A description or topic of the graph. This may also includes style, layout or edge properties')
         return !!this.yFilesGPTServerUrl
     }
 
     /* Plugin entry point */
-    async runPlugin(prompt: string, msgData: MessageData): Promise<AiResponse> {
+    async runPlugin(args: GraphPluginArgs, msgData: MessageData): Promise<AiResponse> {
         const aiResponse = {
             message: "Sorry, I could not execute the graph plugin."
         }
@@ -44,7 +49,7 @@ export class GraphPlugin extends PluginBase {
             },
             {
                 role: ChatCompletionRequestMessageRoleEnum.User,
-                content: prompt
+                content: args.graphPrompt
             }
         ]
 

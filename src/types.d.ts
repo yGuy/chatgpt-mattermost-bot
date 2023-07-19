@@ -15,5 +15,6 @@ export type MessageData = {
 export type AiResponse = {
     message: string,
     props?: Record<string, string>,
-    fileId?: string
+    fileId?: string,
+    intermediate?: boolean
 }

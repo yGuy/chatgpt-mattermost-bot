@@ -11,6 +11,7 @@ import {Post} from "@mattermost/types/lib/posts";
 import {PluginBase} from "./plugins/PluginBase";
 import {JSONMessageData, MessageData} from "./types";
 import {ExitPlugin} from "./plugins/ExitPlugin";
+import {MessageCollectPlugin} from "./plugins/MessageCollectPlugin";
 
 if(!global.FormData) {
     global.FormData = require('form-data')
@@ -20,11 +21,19 @@ const name = process.env['MATTERMOST_BOTNAME'] || '@chatgpt'
 const contextMsgCount = Number(process.env['BOT_CONTEXT_MSG'] ?? 7)
 
 /* List of all registered plugins */
-const plugins: PluginBase[] = [
-    new GraphPlugin("graph-plugin", "Generate a graph based on a given description or topic", "A description or topic of the graph. This may also includes style, layout or edge properties"),
-    new ImagePlugin("image-plugin", "Generates an image based on a given image description.", "A description of the image"),
-    new ExitPlugin("exit-plugin", "Says goodbye to the user and wish him a good day.", "")
+const plugins: PluginBase<any>[] = [
+    new GraphPlugin("graph-plugin", "Generate a graph based on a given description or topic"),
+    new ImagePlugin("image-plugin", "Generates an image based on a given image description."),
+    new ExitPlugin("exit-plugin", "Says goodbye to the user and wish him a good day."),
+    new MessageCollectPlugin("message-collect-plugin", "Collects messages in the thread for a specific user or time"),
 ]
+
+/* The main system instruction for GPT */
+const botInstructions = "Your name is " + name + " and you are a helpful assistant. Whenever the user asks you for help you will " +
+    "provide him with succinct answers. When using functions check for each function argument if the user provided enough " +
+    "information to satisfy the requirements of the argument. If not, ask the user for more information and do not call the " +
+    "function. You know the users name as it is provided within the " +
+    "meta data of his messages."
 
 async function onClientMessage(msg: WebSocketMessage<JSONMessageData>, meId: string, log: Log) {
     if(msg.event  !== 'posted' || !meId) {
@@ -42,9 +51,7 @@ async function onClientMessage(msg: WebSocketMessage<JSONMessageData>, meId: str
     const chatmessages: ChatCompletionRequestMessage[] = [
         {
             role: ChatCompletionRequestMessageRoleEnum.System,
-            content: "Your name is " + name + " and you are a helpful assistant. Whenever the user asks you for help you will " +
-                "provide him with succinct answers. You know the users name as it is provided within the " +
-                "meta data of his message. You never have access to the whole conversation, but only to the last " + contextMsgCount + " messages."
+            content: botInstructions
         },
     ]
 
@@ -74,8 +81,6 @@ async function onClientMessage(msg: WebSocketMessage<JSONMessageData>, meId: str
         log.trace({chatmessages})
         const { message, fileId, props } = await continueThread(chatmessages, msgData)
         log.trace({message})
-
-        //const { message, fileId, props } = await processGraphResponse(answer, msgData.post.channel_id)
 
         // create answer response
         const newPost = await mmClient.createPost({
@@ -108,21 +113,15 @@ async function onClientMessage(msg: WebSocketMessage<JSONMessageData>, meId: str
  * @param previousPosts Older posts in the same channel
  */
 function isMessageIgnored(msgData: MessageData, meId: string, previousPosts: Post[]): boolean {
-    if(msgData.post.root_id === '' && !msgData.mentions.includes(meId)) {
-        // we are not in a thread and not mentioned
-        return true
-    }
+    // we are not in a thread and not mentioned
+    if(msgData.post.root_id === '' && !msgData.mentions.includes(meId)) { return true }
 
-    if(msgData.post.user_id === meId) {
-        // it is our own message
-        return true
-    }
+    // it is our own message
+    if(msgData.post.user_id === meId) { return true }
 
     for(let i = previousPosts.length - 1; i > 0; i--) {
-        if(previousPosts[i].props.bot_status === 'stopped') {
-            // we were asked to stop participating in the conversation
-            return true
-        }
+        // we were asked to stop participating in the conversation
+        if(previousPosts[i].props.bot_status === 'stopped') { return true }
 
         if(previousPosts[i].user_id === meId || previousPosts[i].message.includes(name)) {
             // we are in a thread were we are actively participating or we were mentioned in the thread => respond

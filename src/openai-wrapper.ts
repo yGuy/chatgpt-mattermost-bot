@@ -1,7 +1,7 @@
 import {
     ChatCompletionFunctions,
-    ChatCompletionRequestMessage,
-    ChatCompletionResponseMessage,
+    ChatCompletionRequestMessage, ChatCompletionRequestMessageRoleEnum,
+    ChatCompletionResponseMessage, ChatCompletionResponseMessageRoleEnum,
     Configuration,
     OpenAIApi
 } from "openai";
@@ -17,29 +17,22 @@ const model = process.env['OPENAI_MODEL_NAME'] ?? 'gpt-3.5-turbo'
 const max_tokens = Number(process.env['OPENAI_MAX_TOKENS'] ?? 2000)
 const temperature = Number(process.env['OPENAI_TEMPERATURE'] ?? 1)
 
-const plugins: Record<string, PluginBase> = {}
+const plugins: Record<string, PluginBase<any>> = {}
 const functions: ChatCompletionFunctions[] = []
 
 /**
  * Registers a plugin as a GPT function. These functions are sent to openAI when the user interacts with chatGPT.
  * @param plugin
  */
-export function registerChatPlugin(plugin: PluginBase) {
+export function registerChatPlugin(plugin: PluginBase<any>) {
     plugins[plugin.key] = plugin
     functions.push({
         name: plugin.key,
-        description: plugin.description + '. Think for each argument, if the user provided this information to fulfill ' +
-            'the requirement of the respective property. If the user did not provide enough information ask for more information' +
-            ' instead of calling this function.',
+        description: plugin.description,
         parameters: {
             type: 'object',
-            properties: {
-                prompt: {
-                    type: "string",
-                    description: plugin.promptDescription
-                }
-            },
-            required: ["prompt"]
+            properties: plugin.pluginArguments,
+            required: plugin.requiredArguments
         }
     })
 }
@@ -55,19 +48,34 @@ export async function continueThread(messages: ChatCompletionRequestMessage[], m
         message: 'Sorry, but it seems I found no valid response.'
     }
 
-    const responseMessage = await createChatCompletion(messages, functions)
+    let isIntermediateResponse = true
+    while(isIntermediateResponse) {
+        const responseMessage = await createChatCompletion(messages, functions)
+        if(responseMessage) {
+            // if the function_call is set, we have a plugin call
+            if(responseMessage.function_call && responseMessage.function_call.name) {
+                try {
+                    const pluginResponse = await plugins[responseMessage.function_call!.name!].runPlugin((JSON.parse(responseMessage.function_call!.arguments!)), msgData)
 
-    if(responseMessage) {
-        // if the function_call is set, we have a plugin call
-        if(responseMessage.function_call && responseMessage.function_call.name) {
-            try {
-                aiResponse = await plugins[responseMessage.function_call!.name!].runPlugin((JSON.parse(responseMessage.function_call!.arguments ?? "{}")['prompt'] ?? ""), msgData)
-            } catch (e) {
-                aiResponse.message = `Sorry, but it seems there was an error when using the plugin \`\`\`${responseMessage.function_call!.name!}\`\`\`.`
+                    if(pluginResponse.intermediate) {
+                        messages.push({
+                            role: ChatCompletionResponseMessageRoleEnum.Function,
+                            name: responseMessage.function_call!.name!,
+                            content: pluginResponse.message
+                        })
+                        continue
+                    }
+
+                    aiResponse = pluginResponse
+                } catch (e) {
+                    aiResponse.message = `Sorry, but it seems there was an error when using the plugin \`\`\`${responseMessage.function_call!.name!}\`\`\`.`
+                }
+            } else if(responseMessage.content) {
+                aiResponse.message = responseMessage.content
             }
-        } else if(responseMessage.content) {
-            aiResponse.message = responseMessage.content
         }
+
+        isIntermediateResponse = false
     }
 
     return aiResponse
