@@ -20,6 +20,10 @@ const temperature = Number(process.env['OPENAI_TEMPERATURE'] ?? 1)
 const plugins: Record<string, PluginBase> = {}
 const functions: ChatCompletionFunctions[] = []
 
+/**
+ * Registers a plugin as a GPT function. These functions are sent to openAI when the user interacts with chatGPT.
+ * @param plugin
+ */
 export function registerChatPlugin(plugin: PluginBase) {
     plugins[plugin.key] = plugin
     functions.push({
@@ -40,6 +44,12 @@ export function registerChatPlugin(plugin: PluginBase) {
     })
 }
 
+/**
+ * Sends a message thread to chatGPT. The response can be the message responded by the AI model or the result of a
+ * plugin call.
+ * @param messages The message thread which should be sent.
+ * @param msgData The message data of the last mattermost post representing the newest message in the message thread.
+ */
 export async function continueThread(messages: ChatCompletionRequestMessage[], msgData: MessageData): Promise<AiResponse> {
     let aiResponse: AiResponse = {
         message: 'Sorry, but it seems I found no valid response.'
@@ -50,8 +60,11 @@ export async function continueThread(messages: ChatCompletionRequestMessage[], m
     if(responseMessage) {
         // if the function_call is set, we have a plugin call
         if(responseMessage.function_call && responseMessage.function_call.name) {
-
-            aiResponse = await plugins[responseMessage.function_call!.name!].runPlugin((JSON.parse(responseMessage.function_call!.arguments ?? "{}")['prompt'] ?? ""), msgData)
+            try {
+                aiResponse = await plugins[responseMessage.function_call!.name!].runPlugin((JSON.parse(responseMessage.function_call!.arguments ?? "{}")['prompt'] ?? ""), msgData)
+            } catch (e) {
+                aiResponse.message = `Sorry, but it seems there was an error when using the plugin \`\`\`${responseMessage.function_call!.name!}\`\`\`.`
+            }
         } else if(responseMessage.content) {
             aiResponse.message = responseMessage.content
         }
@@ -61,7 +74,7 @@ export async function continueThread(messages: ChatCompletionRequestMessage[], m
 }
 
 /**
- * Creates a openAI model response.
+ * Creates a openAI chat model response.
  * @param messages The message history the response is created for.
  * @param functions Function calls which can be called by the openAI model
  */
@@ -82,6 +95,10 @@ export async function createChatCompletion(messages: ChatCompletionRequestMessag
     return chatCompletion.data?.choices?.[0]?.message
 }
 
+/**
+ * Creates a openAI DALL-E response.
+ * @param prompt The image description provided to DALL-E.
+ */
 export async function createImage(prompt: string): Promise<string | undefined> {
     const image = await openai.createImage({
         prompt: prompt,
