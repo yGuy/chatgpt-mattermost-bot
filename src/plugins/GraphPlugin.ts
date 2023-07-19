@@ -27,14 +27,14 @@ export class GraphPlugin extends PluginBase {
         "Shortly explain what the diagram is about, but do not state how you constructed the JSON."
 
 
+    setup(): boolean {
+        return !!this.yFilesGPTServerUrl
+    }
+
     /* Plugin entry point */
     async runPlugin(prompt: string, msgData: MessageData): Promise<AiResponse> {
         const aiResponse = {
             message: "Sorry, I could not execute the graph plugin."
-        }
-
-        if (!this.yFilesGPTServerUrl) {
-            return aiResponse
         }
 
         const chatmessages: ChatCompletionRequestMessage[] = [

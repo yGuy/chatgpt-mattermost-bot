@@ -13,4 +13,7 @@ export abstract class PluginBase {
         public readonly promptDescription: string) {}
 
     abstract runPlugin(prompt: string, msgData: MessageData): Promise<AiResponse>;
+    setup(): boolean {
+        return true
+    }
 }
