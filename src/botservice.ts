@@ -18,6 +18,7 @@ if(!global.FormData) {
 const name = process.env['MATTERMOST_BOTNAME'] || '@chatgpt'
 const contextMsgCount = Number(process.env['BOT_CONTEXT_MSG'] ?? 7)
 
+/* List of all registered plugins */
 const plugins: PluginBase[] = [
     new GraphPlugin("graph-plugin", "Generate a graph based on a given description or topic", "A description or topic of the graph. This may also includes style, layout or edge properties"),
     new ImagePlugin("image-plugin", "Generates a image based on a given image description.", "A description of the image")
@@ -39,10 +40,9 @@ async function onClientMessage(msg: WebSocketMessage<JSONMessageData>, meId: str
     const chatmessages: ChatCompletionRequestMessage[] = [
         {
             role: ChatCompletionRequestMessageRoleEnum.System,
-            content: "You are a helpful assistant named ${name} who provides succinct answers. You have knowledge about " +
-                "the last ${contextMsgCount} messages of the conversation. Process the request step by step and " +
-                "always check if the necessary information are provided to call a specific plugin. Only call functions " +
-                "if the user asked for it in its most recent message."
+            content: "Your name is " + name + " and you are a helpful assistant. Whenever the user asks you for help you will " +
+                "provide him with succinct answers. You know the users name as it is provided within the " +
+                "meta data of his message. You never have access to the whole conversation, but only to the last " + contextMsgCount + " messages."
         },
     ]
 
@@ -149,6 +149,7 @@ async function getOlderPosts(refPost: Post, options: {lookBackTime?: number, pos
     return posts
 }
 
+/* Entry point */
 async function main(): Promise<void> {
     Log.options({json: true, colors: true})
     Log.wrapConsole('bot-ws', { level4log: 'INFO'})
