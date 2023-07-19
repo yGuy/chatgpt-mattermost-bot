@@ -10,6 +10,7 @@ import {ImagePlugin} from "./plugins/ImagePlugin";
 import {Post} from "@mattermost/types/lib/posts";
 import {PluginBase} from "./plugins/PluginBase";
 import {JSONMessageData, MessageData} from "./types";
+import {ExitPlugin} from "./plugins/ExitPlugin";
 
 if(!global.FormData) {
     global.FormData = require('form-data')
@@ -21,7 +22,8 @@ const contextMsgCount = Number(process.env['BOT_CONTEXT_MSG'] ?? 7)
 /* List of all registered plugins */
 const plugins: PluginBase[] = [
     new GraphPlugin("graph-plugin", "Generate a graph based on a given description or topic", "A description or topic of the graph. This may also includes style, layout or edge properties"),
-    new ImagePlugin("image-plugin", "Generates a image based on a given image description.", "A description of the image")
+    new ImagePlugin("image-plugin", "Generates an image based on a given image description.", "A description of the image"),
+    new ExitPlugin("exit-plugin", "Says goodbye to the user and wish him a good day.", "")
 ]
 
 async function onClientMessage(msg: WebSocketMessage<JSONMessageData>, meId: string, log: Log) {
@@ -106,9 +108,30 @@ async function onClientMessage(msg: WebSocketMessage<JSONMessageData>, meId: str
  * @param previousPosts Older posts in the same channel
  */
 function isMessageIgnored(msgData: MessageData, meId: string, previousPosts: Post[]): boolean {
-    return msgData.post.root_id === '' && !msgData.mentions.includes(meId) // we are not in a thread and not mentioned
-        || !previousPosts.some(post => post.user_id === meId || post.message.includes(name)) // we are in a thread but did non participate within the last 24h
-        || msgData.post.user_id === meId // or it is our own message
+    if(msgData.post.root_id === '' && !msgData.mentions.includes(meId)) {
+        // we are not in a thread and not mentioned
+        return true
+    }
+
+    if(msgData.post.user_id === meId) {
+        // it is our own message
+        return true
+    }
+
+    for(let i = previousPosts.length - 1; i > 0; i--) {
+        if(previousPosts[i].props.bot_status === 'stopped') {
+            // we were asked to stop participating in the conversation
+            return true
+        }
+
+        if(previousPosts[i].user_id === meId || previousPosts[i].message.includes(name)) {
+            // we are in a thread were we are actively participating or we were mentioned in the thread => respond
+            return false
+        }
+    }
+
+    // we are in a thread but were never mentioned
+    return false
 }
 
 /**
