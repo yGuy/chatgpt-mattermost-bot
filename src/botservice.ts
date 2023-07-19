@@ -20,7 +20,7 @@ const contextMsgCount = Number(process.env['BOT_CONTEXT_MSG'] ?? 7)
 
 const plugins: PluginBase[] = [
     new GraphPlugin("graph-plugin", "Generate a graph based on a given description or topic", "A description or topic of the graph. This may also includes style, layout or edge properties"),
-    new ImagePlugin("image-plugin", "Generates a image.", "A description of the image")
+    new ImagePlugin("image-plugin", "Generates a image based on a given image description.", "A description of the image")
 ]
 
 async function onClientMessage(msg: WebSocketMessage<JSONMessageData>, meId: string, log: Log) {
@@ -39,14 +39,15 @@ async function onClientMessage(msg: WebSocketMessage<JSONMessageData>, meId: str
     const chatmessages: ChatCompletionRequestMessage[] = [
         {
             role: ChatCompletionRequestMessageRoleEnum.System,
-            content: `You are a helpful assistant named ${name} who provides succinct answers. You always
-            have knowledge about the last ${contextMsgCount} messages of the conversation. Process the request step by step and
-            always check if the necessary information are provided to call a specific plugin. Ask for necessary information instead of calling a function.`
+            content: "You are a helpful assistant named ${name} who provides succinct answers. You have knowledge about " +
+                "the last ${contextMsgCount} messages of the conversation. Process the request step by step and " +
+                "always check if the necessary information are provided to call a specific plugin. Only call functions " +
+                "if the user asked for it in its most recent message."
         },
     ]
 
     // create the context
-    posts.slice(-contextMsgCount).forEach(threadPost => {
+    for(const threadPost of posts.slice(-contextMsgCount)) {
         log.trace({msg: threadPost})
         if (threadPost.user_id === meId) {
             chatmessages.push({
@@ -59,8 +60,7 @@ async function onClientMessage(msg: WebSocketMessage<JSONMessageData>, meId: str
                 content: threadPost.message
             })
         }
-    })
-
+    }
 
     // start typing
     const typing = () => wsClient.userTyping(msgData.post.channel_id, (msgData.post.root_id || msgData.post.id) ?? "")

@@ -1,7 +1,7 @@
 import {
     ChatCompletionFunctions,
     ChatCompletionRequestMessage,
-    ChatCompletionRequestMessageFunctionCall, ChatCompletionResponseMessage,
+    ChatCompletionResponseMessage,
     Configuration,
     OpenAIApi
 } from "openai";
@@ -24,7 +24,9 @@ export function registerChatPlugin(plugin: PluginBase) {
     plugins[plugin.key] = plugin
     functions.push({
         name: plugin.key,
-        description: plugin.description + '. Think for each argument, if the user provided this information to fulfill the requirement of the respective property. If not, ask for the missing information and do not call this function.',
+        description: plugin.description + '. Think for each argument, if the user provided this information to fulfill ' +
+            'the requirement of the respective property. If the user did not provide enough information ask for more information' +
+            ' instead of calling this function.',
         parameters: {
             type: 'object',
             properties: {
@@ -36,6 +38,26 @@ export function registerChatPlugin(plugin: PluginBase) {
             required: ["prompt"]
         }
     })
+}
+
+export async function continueThread(messages: ChatCompletionRequestMessage[], msgData: MessageData): Promise<AiResponse> {
+    let aiResponse: AiResponse = {
+        message: 'Sorry, but it seems I found no valid response.'
+    }
+
+    const responseMessage = await createChatCompletion(messages, functions)
+
+    if(responseMessage) {
+        // if the function_call is set, we have a plugin call
+        if(responseMessage.function_call && responseMessage.function_call.name) {
+
+            aiResponse = await plugins[responseMessage.function_call!.name!].runPlugin((JSON.parse(responseMessage.function_call!.arguments ?? "{}")['prompt'] ?? ""), msgData)
+        } else if(responseMessage.content) {
+            aiResponse.message = responseMessage.content
+        }
+    }
+
+    return aiResponse
 }
 
 /**
@@ -60,22 +82,13 @@ export async function createChatCompletion(messages: ChatCompletionRequestMessag
     return chatCompletion.data?.choices?.[0]?.message
 }
 
-export async function continueThread(messages: ChatCompletionRequestMessage[], msgData: MessageData): Promise<AiResponse> {
-    let aiResponse: AiResponse = {
-        message: 'Sorry, but it seems I found no valid response.'
-    }
+export async function createImage(prompt: string): Promise<string | undefined> {
+    const image = await openai.createImage({
+        prompt: prompt,
+        n: 1,
+        size: '512x512',
+        response_format: "b64_json"
+    })
 
-    const responseMessage = await createChatCompletion(messages, functions)
-
-    if(responseMessage) {
-        // if the function_call is set, we have a plugin call
-        if(responseMessage.function_call && responseMessage.function_call.name) {
-
-            aiResponse = await plugins[responseMessage.function_call!.name!].runPlugin((JSON.parse(responseMessage.function_call!.arguments ?? "{}")['prompt'] ?? ""), msgData)
-        } else if(responseMessage.content) {
-            aiResponse.message = responseMessage.content
-        }
-    }
-
-    return aiResponse
+    return image.data?.data[0]?.b64_json
 }
