@@ -5,7 +5,11 @@ import {createChatCompletion, createImage} from "../openai-wrapper";
 import FormData from "form-data";
 import {mmClient} from "../mm-client";
 
-export class ImagePlugin extends PluginBase {
+type ImagePluginArgs = {
+    imageDescription: string
+}
+
+export class ImagePlugin extends PluginBase<ImagePluginArgs> {
     private readonly GPT_INSTRUCTIONS = "You are a prompt engineer who helps a user to create good prompts for " +
         "the image AI DALL-E. The user will provide you with a short image description and you transform this into a " +
         "proper prompt text. When creating the prompt first describe the looks and structure of the image. " +
@@ -15,19 +19,25 @@ export class ImagePlugin extends PluginBase {
         "'street-art', 'drawing', or similar words. Keep the prompt as simple as possible and never get longer than " +
         "400 characters. You may only answer with the resulting prompt and provide no description or explanations."
 
-    async runPlugin(prompt: string, msgData: MessageData): Promise<AiResponse> {
+
+    setup(): boolean {
+        this.addPluginArgument('imageDescription', 'string', 'The description of the image provided by the user')
+        return super.setup();
+    }
+
+    async runPlugin(args: ImagePluginArgs, msgData: MessageData): Promise<AiResponse> {
         const aiResponse: AiResponse = {
             message: "Sorry, I could not execute the image plugin."
         }
 
         try {
-            const imagePrompt = await this.createImagePrompt(prompt)
+            const imagePrompt = await this.createImagePrompt(args.imageDescription)
             if(imagePrompt) {
-                this.log.trace({imageInputPrompt: prompt, imageOutputPrompt: imagePrompt})
+                this.log.trace({imageInputPrompt: args.imageDescription, imageOutputPrompt: imagePrompt})
                 const base64Image = await createImage(imagePrompt)
                 if(base64Image) {
                     const fileId = await this.base64ToFile(base64Image, msgData.post.channel_id)
-                    aiResponse.message = "Sure, here is the image you requested. " + imagePrompt
+                    aiResponse.message = "Here is the image you requested: " + imagePrompt
                     aiResponse.props = {originalMessage: "Sure here is the image you requested. <IMAGE>" + imagePrompt + "</IMAGE>"}
                     aiResponse.fileId = fileId
                 }
