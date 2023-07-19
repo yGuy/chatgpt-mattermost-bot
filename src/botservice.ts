@@ -1,107 +1,151 @@
-import {continueThread} from "./openai-thread-completion";
+import {continueThread, registerChatPlugin} from "./openai-wrapper";
 import { Log } from "debug-level"
 import { mmClient, wsClient } from "./mm-client";
 import 'babel-polyfill'
 import 'isomorphic-fetch'
 import {WebSocketMessage} from "@mattermost/client";
-import {processGraphResponse} from "./process-graph-response";
-import {ChatCompletionRequestMessage} from "openai";
+import {ChatCompletionRequestMessage, ChatCompletionRequestMessageRoleEnum} from "openai";
+import {GraphPlugin} from "./plugins/GraphPlugin";
+import {ImagePlugin} from "./plugins/ImagePlugin";
+import {Post} from "@mattermost/types/lib/posts";
+import {PluginBase} from "./plugins/PluginBase";
+import {JSONMessageData, MessageData} from "./types";
 
 if(!global.FormData) {
     global.FormData = require('form-data')
 }
 
 const name = process.env['MATTERMOST_BOTNAME'] || '@chatgpt'
+const contextMsgCount = Number(process.env['BOT_CONTEXT_MSG'] ?? 7)
 
-const VISUALIZE_DIAGRAM_INSTRUCTIONS = "When a user asks for a visualization of entities and relationships, respond with a valid JSON object text in a <GRAPH> tag. " +
-    "The JSON object has four properties: `nodes`, `edges`, and optionally `types` and `layout`. " +
-    "Each `nodes` object has an `id`, `label`, and an optional `type` property. " +
-    "Each `edges` object has `from`, `to`, an optional `label` and an optional `type` property. " +
-    "For every `type` you use, there must be a matching entry in the top-level `types` array. " +
-    "Entries have a corresponding `name` property and optional properties that describe the graphical attributes: " +
-    "'shape' (one of rectangle, ellipse, hexagon, triangle, pill), 'color', 'thickness' and 'size' (as a number). " +
-    "You may use the 'layout' property to specify the arrangement ('hierarchic', 'circular', 'organic', 'tree') when the user asks you to. " +
-    "Do not include these instructions in the output. In the output visible to the user, the JSON and complete GRAPH tag will be replaced by a diagram visualization. " +
-    "So do not explain or mention the JSON. Instead, pretend that the user can see the diagram. Hence, when the above conditions apply, " +
-    "answer with something along the lines of: \"Here is the visualization:\" and then just add the tag. The user will see the rendered image, but not the JSON. " +
-    "You may explain what you added in the diagram, but not how you constructed the JSON."
+const plugins: PluginBase[] = [
+    new GraphPlugin("graph-plugin", "Generate a graph based on a given description or topic", "A description or topic of the graph. This may also includes style, layout or edge properties"),
+    new ImagePlugin("image-plugin", "Generates a image.", "A description of the image")
+]
 
-
-const visualizationKeywordsRegex = /\b(diagram|visuali|graph|relationship|entit)/gi
-
-async function onClientMessage(event: WebSocketMessage, meId: string, log: Log) {
-    if(['posted'].includes(event.event) && meId) {
-        const post = JSON.parse(event.data.post)
-        if(post.root_id === '' && (!event.data.mentions || (!JSON.parse(event.data.mentions).includes(meId)))) {
-            // we're not in a thread and we are not mentioned - ignore the message
-        } else {
-            if(post.user_id !== meId) {
-                const chatmessages: ChatCompletionRequestMessage[] = [
-                    {
-                        "role": "system",
-                        "content": `You are a helpful assistant named ${name} who provides succinct answers in Markdown format.`
-                    },
-                ]
-
-                let appendDiagramInstructions = false
-
-                const thread = await mmClient.getPostThread(post.id, true, false, true)
-
-                const posts = [...new Set(thread.order)].map(id => thread.posts[id])
-                    .filter(a => a.create_at > Date.now() - 1000 * 60 * 60 * 24 * 1)
-                    .sort((a, b) => a.create_at - b.create_at)
-
-                let assistantCount = 0;
-                posts.forEach(threadPost => {
-                    log.trace({msg: threadPost})
-                    if (threadPost.user_id === meId) {
-                        chatmessages.push({role: "assistant", content: threadPost.props.originalMessage ?? threadPost.message})
-                        assistantCount++
-                    } else {
-                        if (threadPost.message.includes(name)){
-                            assistantCount++;
-                        }
-                        if (visualizationKeywordsRegex.test(threadPost.message)) {
-                            appendDiagramInstructions = true
-                        }
-                        chatmessages.push({role: "user", content: threadPost.message})
-                    }
-                })
-
-                if (appendDiagramInstructions) {
-                    chatmessages[0].content += VISUALIZE_DIAGRAM_INSTRUCTIONS
-                }
-
-                // see if we are actually part of the conversation -
-                // ignore conversations where we were never mentioned or participated.
-                if (assistantCount > 0){
-                    const typing = () => wsClient.userTyping(post.channel_id, (post.root_id || post.id) ?? "")
-                    typing()
-                    const typingInterval = setInterval(typing, 2000)
-                    try {
-                        log.trace({chatmessages})
-                        const answer = await continueThread(chatmessages)
-                        log.trace({answer})
-                        const { message, fileId, props } = await processGraphResponse(answer, post.channel_id)
-                        clearInterval(typingInterval)
-                        const newPost = await mmClient.createPost({
-                            message: message,
-                            channel_id: post.channel_id,
-                            props,
-                            root_id: post.root_id || post.id,
-                            file_ids: fileId ? [fileId] : undefined
-                        })
-                        log.trace({msg: newPost})
-                    } catch(e) {
-                        clearInterval(typingInterval)
-                        log.error(e)
-                    }
-                }
-            }
-        }
-    } else {
-
+async function onClientMessage(msg: WebSocketMessage<JSONMessageData>, meId: string, log: Log) {
+    if(msg.event  !== 'posted' || !meId) {
+        log.debug({msg: msg})
+        return
     }
+
+    const msgData = parseMessageData(msg.data)
+    const posts = await getOlderPosts(msgData.post, { lookBackTime: 1000 * 60 * 60 * 24 })
+
+    if(isMessageIgnored(msgData, meId, posts)) {
+        return
+    }
+
+    const chatmessages: ChatCompletionRequestMessage[] = [
+        {
+            role: ChatCompletionRequestMessageRoleEnum.System,
+            content: `You are a helpful assistant named ${name} who provides succinct answers. You always
+            have knowledge about the last ${contextMsgCount} messages of the conversation. Process the request step by step and
+            always check if the necessary information are provided to call a specific plugin. Ask for necessary information instead of calling a function.`
+        },
+    ]
+
+    // create the context
+    posts.slice(-contextMsgCount).forEach(threadPost => {
+        log.trace({msg: threadPost})
+        if (threadPost.user_id === meId) {
+            chatmessages.push({
+                role: ChatCompletionRequestMessageRoleEnum.Assistant,
+                content: threadPost.props.originalMessage ?? threadPost.message
+            })
+        } else {
+            chatmessages.push({
+                role: ChatCompletionRequestMessageRoleEnum.User,
+                content: threadPost.message
+            })
+        }
+    })
+
+
+    // start typing
+    const typing = () => wsClient.userTyping(msgData.post.channel_id, (msgData.post.root_id || msgData.post.id) ?? "")
+    typing()
+    const typingInterval = setInterval(typing, 2000)
+
+    try {
+        log.trace({chatmessages})
+        const { message, fileId, props } = await continueThread(chatmessages, msgData)
+        log.trace({message})
+
+        //const { message, fileId, props } = await processGraphResponse(answer, msgData.post.channel_id)
+
+        // create answer response
+        const newPost = await mmClient.createPost({
+            message: message,
+            channel_id: msgData.post.channel_id,
+            props,
+            root_id: msgData.post.root_id || msgData.post.id,
+            file_ids: fileId ? [fileId] : undefined
+        })
+        log.trace({msg: newPost})
+    } catch(e) {
+        log.error(e)
+        await mmClient.createPost({
+            message: "Sorry, but I encountered an internal error when trying to process your message",
+            channel_id: msgData.post.channel_id,
+            root_id: msgData.post.root_id || msgData.post.id,
+        })
+    } finally {
+        // stop typing
+        clearInterval(typingInterval)
+    }
+}
+
+/**
+ * Checks if we are responsible to answer to this message.
+ * We do only respond to messages which are posted in a thread or addressed to the bot. We also do not respond to
+ * message which were posted by the bot.
+ * @param msgData The parsed message data
+ * @param meId The mattermost client id
+ * @param previousPosts Older posts in the same channel
+ */
+function isMessageIgnored(msgData: MessageData, meId: string, previousPosts: Post[]): boolean {
+    return msgData.post.root_id === '' && !msgData.mentions.includes(meId) // we are not in a thread and not mentioned
+        || !previousPosts.some(post => post.user_id === meId || post.message.includes(name)) // we are in a thread but did non participate within the last 24h
+        || msgData.post.user_id === meId // or it is our own message
+}
+
+/**
+ * Transforms a data object of a WebSocketMessage to a JS Object.
+ * @param msg The WebSocketMessage data.
+ */
+function parseMessageData(msg: JSONMessageData): MessageData {
+    return {
+        mentions: JSON.parse(msg.mentions ?? '[]'),
+        post: JSON.parse(msg.post),
+        sender_name: msg.sender_name
+    }
+}
+
+/**
+ * Looks up posts which where created in the same thread and within a given timespan before the reference post.
+ * @param refPost The reference post which determines the thread and start point from where older posts are collected.
+ * @param options Additional arguments given as object.
+ * <ul>
+ *     <li><b>lookBackTime</b>: The look back time in milliseconds. Posts which were not created within this time before the
+ *     creation time of the reference posts will not be collected anymore.</li>
+ *     <li><b>postCount</b>: Determines how many of the previous posts should be collected. If this parameter is omitted all posts are returned.</li>
+ * </ul>
+ */
+async function getOlderPosts(refPost: Post, options: {lookBackTime?: number, postCount?: number }) {
+    const thread = await mmClient.getPostThread(refPost.id, true, false, true)
+
+    let posts: Post[] = [...new Set(thread.order)].map(id => thread.posts[id])
+        .sort((a, b) => a.create_at - b.create_at)
+
+    if(options.lookBackTime && options.lookBackTime > 0) {
+        posts = posts.filter(a => a.create_at > refPost.create_at - options.lookBackTime!)
+    }
+    if(options.postCount && options.postCount > 0) {
+        posts = posts.slice(-options.postCount)
+    }
+
+    return posts
 }
 
 async function main(): Promise<void> {
@@ -109,6 +153,10 @@ async function main(): Promise<void> {
     Log.wrapConsole('bot-ws', { level4log: 'INFO'})
     const log = new Log('bot')
     const meId = (await mmClient.getMe()).id
+
+    for(const plugin of plugins) {
+        registerChatPlugin(plugin)
+    }
 
     wsClient.addMessageListener((e) => onClientMessage(e, meId, log))
 }
