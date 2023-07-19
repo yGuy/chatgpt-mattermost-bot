@@ -1,22 +1,15 @@
-const continueThread = require('./openai-thread-completion').continueThread
-const { Log } = require('debug-level')
+import {continueThread} from "./openai-thread-completion";
+import { Log } from "debug-level"
+import { mmClient, wsClient } from "./mm-client";
+import 'babel-polyfill'
+import 'isomorphic-fetch'
+import {WebSocketMessage} from "@mattermost/client";
+import {processGraphResponse} from "./process-graph-response";
+import {ChatCompletionRequestMessage} from "openai";
 
-require('babel-polyfill');
-require('isomorphic-fetch');
-const { processGraphResponse } = require('./process-graph-response')
-const { mmClient, wsClient } = require('./mm-client')
-
-// the mattermost library uses FormData - so here is a polyfill
-if (!global.FormData) {
-    global.FormData = require('form-data');
+if(!global.FormData) {
+    global.FormData = require('form-data')
 }
-
-Log.options({ json: true, colors: true })
-Log.wrapConsole('bot-ws', { level4log: 'INFO' })
-const log = new Log('bot')
-
-let meId = null;
-mmClient.getMe().then(me => meId = me.id)
 
 const name = process.env['MATTERMOST_BOTNAME'] || '@chatgpt'
 
@@ -33,16 +26,17 @@ const VISUALIZE_DIAGRAM_INSTRUCTIONS = "When a user asks for a visualization of 
     "answer with something along the lines of: \"Here is the visualization:\" and then just add the tag. The user will see the rendered image, but not the JSON. " +
     "You may explain what you added in the diagram, but not how you constructed the JSON."
 
+
 const visualizationKeywordsRegex = /\b(diagram|visuali|graph|relationship|entit)/gi
 
-wsClient.addMessageListener(async function (event) {
-    if (['posted'].includes(event.event) && meId) {
-        const post = JSON.parse(event.data.post);
-        if (post.root_id === "" && (!event.data.mentions || (!JSON.parse(event.data.mentions).includes(meId)))) {
+async function onClientMessage(event: WebSocketMessage, meId: string, log: Log) {
+    if(['posted'].includes(event.event) && meId) {
+        const post = JSON.parse(event.data.post)
+        if(post.root_id === '' && (!event.data.mentions || (!JSON.parse(event.data.mentions).includes(meId)))) {
             // we're not in a thread and we are not mentioned - ignore the message
         } else {
-            if (post.user_id !== meId) {
-                const chatmessages = [
+            if(post.user_id !== meId) {
+                const chatmessages: ChatCompletionRequestMessage[] = [
                     {
                         "role": "system",
                         "content": `You are a helpful assistant named ${name} who provides succinct answers in Markdown format.`
@@ -106,9 +100,17 @@ wsClient.addMessageListener(async function (event) {
             }
         }
     } else {
-        log.debug({msg: event})
+
     }
-});
+}
 
+async function main(): Promise<void> {
+    Log.options({json: true, colors: true})
+    Log.wrapConsole('bot-ws', { level4log: 'INFO'})
+    const log = new Log('bot')
+    const meId = (await mmClient.getMe()).id
 
+    wsClient.addMessageListener((e) => onClientMessage(e, meId, log))
+}
 
+main().catch(console.error)
