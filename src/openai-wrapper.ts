@@ -1,6 +1,6 @@
 import {
     ChatCompletionFunctions,
-    ChatCompletionRequestMessage, ChatCompletionRequestMessageRoleEnum,
+    ChatCompletionRequestMessage,
     ChatCompletionResponseMessage, ChatCompletionResponseMessageRoleEnum,
     Configuration,
     OpenAIApi

@@ -16,7 +16,7 @@ If you want to learn more about how this plugin came to live, [read the blog pos
 
 ## Options
 
-These are the available options, you can set them as environment variables when running [the script](./src/botservice.js)
+These are the available options, you can set them as environment variables when running [the script](./src/botservice.ts)
 or when [running the docker image](#using-the-ready-made-image) or when configuring your [docker-compose](#docker-compose) file.
 
 | Name                 | Required | Example Value               | Description                                                                                                                                                                                        |

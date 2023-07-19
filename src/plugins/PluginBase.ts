@@ -8,6 +8,7 @@ type PluginArgument = {
 
 /**
  * A base class for plugins defining some default functionality.
+ * @typeParam T - The type of the argument object which is passed to the runPlugin method.
  */
 export abstract class PluginBase<T> {
     protected readonly log = new Log('bot')
