@@ -18,7 +18,7 @@ if(!global.FormData) {
 }
 
 const name = process.env['MATTERMOST_BOTNAME'] || '@chatgpt'
-const contextMsgCount = Number(process.env['BOT_CONTEXT_MSG'] ?? 7)
+const contextMsgCount = Number(process.env['BOT_CONTEXT_MSG'] ?? 100)
 
 /* List of all registered plugins */
 const plugins: PluginBase<any>[] = [
@@ -185,6 +185,15 @@ async function userIdToName(userId: string): Promise<string> {
     } else {
         // username not in cache our outdated
         username = (await mmClient.getUser(userId)).username
+
+        if(!/^[a-zA-Z0-9_-]{1,64}$/.test(username)) {
+            username = username.replace(/[.@!?]/g,'_').slice(0, 64)
+        }
+
+        if(!/^[a-zA-Z0-9_-]{1,64}$/.test(username)) {
+            username = [...username.matchAll(/[a-zA-Z0-9_-]/g)].join('').slice(0, 64)
+        }
+
         usernameCache[userId] = {
             username: username,
             expireTime: Date.now() + 1000 * 60 * 5
