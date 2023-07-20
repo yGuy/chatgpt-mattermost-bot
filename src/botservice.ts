@@ -66,7 +66,7 @@ async function onClientMessage(msg: WebSocketMessage<JSONMessageData>, meId: str
         } else {
             chatmessages.push({
                 role: ChatCompletionRequestMessageRoleEnum.User,
-                name: (await mmClient.getUser(threadPost.user_id)).username,
+                name: await userIdToName(threadPost.user_id),
                 content: threadPost.message
             })
         }
@@ -124,7 +124,7 @@ function isMessageIgnored(msgData: MessageData, meId: string, previousPosts: Pos
         if(previousPosts[i].props.bot_status === 'stopped') { return true }
 
         if(previousPosts[i].user_id === meId || previousPosts[i].message.includes(name)) {
-            // we are in a thread were we are actively participating or we were mentioned in the thread => respond
+            // we are in a thread were we are actively participating, or we were mentioned in the thread => respond
             return false
         }
     }
@@ -169,6 +169,29 @@ async function getOlderPosts(refPost: Post, options: {lookBackTime?: number, pos
     }
 
     return posts
+}
+
+const usernameCache: Record<string, {username: string, expireTime: number}> = {}
+/**
+ * Looks up the mattermost username for the given userId. Every username which is looked up will be cached for 5 minutes.
+ * @param userId
+ */
+async function userIdToName(userId: string): Promise<string> {
+    let username: string
+
+    // check if userId is in cache and not outdated
+    if(usernameCache[userId] && Date.now() < usernameCache[userId].expireTime ) {
+        username = usernameCache[userId].username
+    } else {
+        // username not in cache our outdated
+        username = (await mmClient.getUser(userId)).username
+        usernameCache[userId] = {
+            username: username,
+            expireTime: Date.now() + 1000 * 60 * 5
+        }
+    }
+
+    return username
 }
 
 /* Entry point */
