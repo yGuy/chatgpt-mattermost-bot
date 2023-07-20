@@ -1,14 +1,15 @@
 {
   "extends": "ts-node/node16/tsconfig.json",
   "compilerOptions": {
-    "module": "ESNext",
-    "target": "ESNext",
+    "module": "commonjs",
+    "target": "es6",
     "sourceMap": true,
     "rootDir": "src",
     "moduleResolution": "node",
     "lib": ["DOM"],
     "resolveJsonModule": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "outDir": "dist"
   },
   "ts-node": {
     "esm": true,
