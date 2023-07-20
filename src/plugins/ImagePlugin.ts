@@ -22,6 +22,10 @@ export class ImagePlugin extends PluginBase<ImagePluginArgs> {
 
     setup(): boolean {
         this.addPluginArgument('imageDescription', 'string', 'The description of the image provided by the user')
+
+        if(!process.env.plugins || process.env.plugins.indexOf('image-plugin') === -1)
+            return false
+
         return super.setup();
     }
 
