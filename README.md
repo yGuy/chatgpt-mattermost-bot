@@ -9,24 +9,30 @@ You need
  - the [OpenAI API key](https://platform.openai.com/account/api-keys)
  - a [Docker](https://www.docker.com/) server for continuously running the service, alternatively for testing, Node.js is sufficient.
 
-There's a guide about how to do the first two steps written by @InterestingSoup, [here](https://interestingsoup.com/create-a-chatgpt-bot-on-mattermost/) (lots of ads on that page, just block them, ignore them, or keep on reading and try without their screenshots!)
+Andrew Zigler from Mattermost created a [YouTube Video](https://www.youtube.com/watch?v=Hx4Ex7YZZiA) that quickly guides you through the setup.
+
+If you want to learn more about how this plugin came to live, [read the blog post at yWorks.com](https://www.yworks.com/blog/diagramming-with-chatgpt)!
+
 
 ## Options
 
-These are the available options, you can set them as environment variables when running [the script](./src/botservice.js)
+These are the available options, you can set them as environment variables when running [the script](./src/botservice.ts)
 or when [running the docker image](#using-the-ready-made-image) or when configuring your [docker-compose](#docker-compose) file.
 
-| Name                | Required | Example Value               | Description                                                                                 |
-|---------------------|----------|-----------------------------|---------------------------------------------------------------------------------------------|
-| MATTERMOST_URL      | yes      | `https://mattermost.server` | The URL to the server. This is used for connecting the bot to the Mattermost API            |
-| MATTERMOST_TOKEN    | yes      | `abababacdcdcd`             | The authentication token from the logged in mattermost bot                                  |
-| OPENAI_API_KEY      | yes      | `sk-234234234234234234`     | The OpenAI API key to authenticate with OpenAI                                              |
-| OPENAI_MODEL_NAME   | no       | `gpt-3.5-turbo`             | The OpenAI language model to use, defaults to `gpt-3.5-turbo`                               |
-| OPENAI_MAX_TOKENS   | no       | `2000`                      | The maximum number of tokens to pass to the OpenAI API, defaults to 2000                    |
- | YFILES_SERVER_URL   | no       | `http://localhost:3835`     | The URL to the yFiles graph service for embedding auto-generated diagrams.                  |
- | NODE_EXTRA_CA_CERTS | no       | `/file/to/cert.crt`         | a link to a certificate file to pass to node.js for authenticating self-signed certificates |
- | MATTERMOST_BOTNAME  | no       | `"@chatgpt"`                | the name of the bot user in Mattermost, defaults to '@chatgpt'                              |
- | DEBUG_LEVEL         | no       | `TRACE`                     | a debug level used for logging activity, defaults to `INFO`                                 |
+| Name                 | Required | Example Value                | Description                                                                                                                                                                                        |
+|----------------------|----------|------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| MATTERMOST_URL       | yes      | `https://mattermost.server`  | The URL to the server. This is used for connecting the bot to the Mattermost API                                                                                                                   |
+| MATTERMOST_TOKEN     | yes      | `abababacdcdcd`              | The authentication token from the logged in mattermost bot                                                                                                                                         |
+| OPENAI_API_KEY       | yes      | `sk-234234234234234234`      | The OpenAI API key to authenticate with OpenAI                                                                                                                                                     |
+| OPENAI_MODEL_NAME    | no       | `gpt-3.5-turbo`              | The OpenAI language model to use, defaults to `gpt-3.5-turbo`                                                                                                                                      |
+| OPENAI_MAX_TOKENS    | no       | `2000`                       | The maximum number of tokens to pass to the OpenAI API, defaults to 2000                                                                                                                           |
+| OPENAI_TEMPERATURE   | no       | `0.2`                        | The sampling temperature to use, between 0 and 2, defaults to 1. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic. |
+| YFILES_SERVER_URL    | no       | `http://localhost:3835`      | The URL to the yFiles graph service for embedding auto-generated diagrams.                                                                                                                         |
+| NODE_EXTRA_CA_CERTS  | no       | `/file/to/cert.crt`          | a link to a certificate file to pass to node.js for authenticating self-signed certificates                                                                                                        |
+| MATTERMOST_BOTNAME   | no       | `"@chatgpt"`                 | the name of the bot user in Mattermost, defaults to '@chatgpt'                                                                                                                                     |
+| PLUGINS              | no       | `graph-plugin, image-plugin` | The enabled plugins of the bot. By default all plugins (grpah-plugin and image-plugin) are enabled.                                                                                                |
+| DEBUG_LEVEL          | no       | `TRACE`                      | a debug level used for logging activity, defaults to `INFO`                                                                                                                                        |
+| BOT_CONTEXT_MSG      | no       | `15`                         | The number of previous messages which are appended to the conversation with ChatGPT, defaults to 100                                                                                               |
 
 > **Note**
 > The `YFILES_SERVER_URL` is used for automatically converting text information created by the bot into diagrams.
@@ -39,7 +45,7 @@ or when [running the docker image](#using-the-ready-made-image) or when configur
 Use the prebuilt image from [`ghcr.io/yguy/chatgpt-mattermost-bot`](https://ghcr.io/yguy/chatgpt-mattermost-bot)
 
 ```bash
-docker run -d --restart unless-stopped \
+docker runPlugin -d --restart unless-stopped \
   -e MATTERMOST_URL=https://mattermost.server \
   -e MATTERMOST_TOKEN=abababacdcdcd \
   -e OPENAI_API_KEY=234234234234234234 \
@@ -55,18 +61,18 @@ First step is to clone this repo.
 git clone https://github.com/yGuy/chatgpt-mattermost-bot.git && cd chatgpt-mattermost-bot
 ```
 
-For testing, you could now just run `npm install` and `npm run start` or `node src/botservice.js` directly, but be sure to set the [environment variables](#options) or pass them to the node process, first!
+For testing, you could now just runPlugin `npm install` and `npm runPlugin start` or `node src/botservice.js` directly, but be sure to set the [environment variables](#options) or pass them to the node process, first!
 
-For production use, in order to create a service on a docker container that will always provide the service without you having to run it on your own PC, you can do the following:
+For production use, in order to create a service on a docker container that will always provide the service without you having to runPlugin it on your own PC, you can do the following:
 
 Build the docker image from the [Dockerfile](./Dockerfile):
 ```bash
 docker build . -t yguy/chatgpt-mattermost-bot
 ```
 
-Create and run a container from the image
+Create and runPlugin a container from the image
 ```bash
-docker run -d --restart unless-stopped \
+docker runPlugin -d --restart unless-stopped \
   -e MATTERMOST_URL=https://mattermost.server \
   -e MATTERMOST_TOKEN=abababacdcdcd \
   -e OPENAI_API_KEY=234234234234234234 \
@@ -81,7 +87,7 @@ will need to provide the CA's public root to the container for validation.
 If the root certificate is located at `/absolutepath/to/certfile.crt`, then you
 can mount that file into the container at a fixed position and specify the [node environment variable](https://nodejs.org/api/cli.html#node_extra_ca_certsfile) accordingly:
 ```bash
-docker run -d --restart unless-stopped \
+docker runPlugin -d --restart unless-stopped \
   -v /absolutepath/to/certfile.crt:/certs/certfile.crt \
   -e NODE_EXTRA_CA_CERTS=/certs/certfile.crt \
   -e MATTERMOST_URL=https://mattermost.server \
@@ -102,7 +108,7 @@ docker stop chatbot
 ```
 
 ## Docker Compose
-If you want to run docker compose (maybe even merge it with your mattermost docker stack), you can use this 
+If you want to runPlugin docker compose (maybe even merge it with your mattermost docker stack), you can use this 
 as a starting point: First adjust the environment variables in `docker-compose.yml`.
 
 ### Required Environment Variables
@@ -172,4 +178,4 @@ I will also accept helpful pull requests if you find an issue or have an idea fo
 
 Last but not least, check out [yWorks](https://www.yworks.com)' fine diagramming SDKs for software developers [yFiles](https://yworks.com/yfiles) and our [free online graph and diagram editors](https://yworks.com/editors)!
 
-This is under MIT license Copyright (c) 2023 Sebastian Mueller (yWorks)
+This is under MIT license Copyright (c) 2023 Sebastian Mueller and Michael Haeglsperger (yWorks)

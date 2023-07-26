@@ -1,3 +1,4 @@
 /node_modules/
+/dist/
 /*.crt
 docker-compose.override.yml
