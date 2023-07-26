@@ -34,8 +34,9 @@ export class GraphPlugin extends PluginBase<GraphPluginArgs> {
     setup(): boolean {
         this.addPluginArgument('graphPrompt', 'string', 'A description or topic of the graph. This may also includes style, layout or edge properties')
 
-        if(!process.env.plugins || process.env.plugins.indexOf('graph-plugin') === -1)
-            return false
+        const plugins = process.env["PLUGINS"];
+        if(!plugins || plugins.indexOf('graph-plugin') === -1)
+          return false
 
         return !!this.yFilesGPTServerUrl
     }
