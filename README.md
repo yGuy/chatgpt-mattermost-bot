@@ -2,12 +2,15 @@
 
 ![A chat window in Mattermost showing the chat between the OpenAI bot and "yGuy"](./mattermost-chat.png)
 
-Here's how to get the bot running - it's easy if you have a Docker server.
+The bot can talk to you like a regular mattermost user. It's like having chat.openai.com built collaboratively built into Mattermost!
+But that's not all, you can also use it to generate images via Dall-E or diagram visualizations via a yFiles plugin! 
+
+Here's how to get the bot running - it's easy if you have a Docker host.
 
 You need
  - the [Mattermost token](https://docs.mattermost.com/integrations/cloud-bot-accounts.html) for the bot user (`@chatgpt` by default)
  - the [OpenAI API key](https://platform.openai.com/account/api-keys)
- - a [Docker](https://www.docker.com/) server for continuously running the service, alternatively for testing, Node.js is sufficient.
+ - a [Docker](https://www.docker.com/) server for continuously running the service, alternatively for testing, Node.js 16 is sufficient.
 
 Andrew Zigler from Mattermost created a [YouTube Video](https://www.youtube.com/watch?v=Hx4Ex7YZZiA) that quickly guides you through the setup.
 
@@ -17,7 +20,7 @@ If you want to learn more about how this plugin came to live, [read the blog pos
 ## Options
 
 These are the available options, you can set them as environment variables when running [the script](./src/botservice.ts)
-or when [running the docker image](#using-the-ready-made-image) or when configuring your [docker-compose](#docker-compose) file.
+or when [running the docker image](#using-the-ready-made-docker-image) or when configuring your [docker-compose](#docker-compose) file.
 
 | Name                 | Required | Example Value                | Description                                                                                                                                                                                        |
 |----------------------|----------|------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -40,7 +43,7 @@ or when [running the docker image](#using-the-ready-made-image) or when configur
 > [LinkedIn Post](https://www.linkedin.com/posts/yguy_chatgpt-yfiles-diagramming-activity-7046713027005407232-2bKH)
 > If you are interested in getting your hands on the plugin, please contact [yWorks](https://www.yworks.com)!
 
-## Using the ready-made image
+## Using the ready-made Docker image
 
 Use the prebuilt image from [`ghcr.io/yguy/chatgpt-mattermost-bot`](https://ghcr.io/yguy/chatgpt-mattermost-bot)
 
@@ -53,7 +56,7 @@ docker run -d --restart unless-stopped \
   ghcr.io/yguy/chatgpt-mattermost-bot:latest
 ```
 
-## Building the docker image yourself
+## Building the Docker image manually
 
 First step is to clone this repo.
 
@@ -61,9 +64,9 @@ First step is to clone this repo.
 git clone https://github.com/yGuy/chatgpt-mattermost-bot.git && cd chatgpt-mattermost-bot
 ```
 
-For testing, you could now just run `npm install` and `npm run start` or `node src/botservice.js` directly, but be sure to set the [environment variables](#options) or pass them to the node process, first!
+For testing, you could now just run `npm install` and `npm run start` directly, but be sure to set the [environment variables](#options)  or pass them to the node process, first! 
 
-For production use, in order to create a service on a docker container that will always provide the service without you having to run it on your own PC, you can do the following:
+For production use, in order to create a service on a docker container that will always provide the service without you having to run it on your own machine, you can do the following:
 
 Build the docker image from the [Dockerfile](./Dockerfile):
 ```bash
@@ -145,7 +148,7 @@ services:
       NODE_EXTRA_CA_CERTS: /certs/certfile.crt
 ```
 
-### Run the container as a daemon
+### Run the container as a service
 When all configuration is complete, start the container service.
 ```bash
 docker compose up -d
@@ -178,4 +181,4 @@ I will also accept helpful pull requests if you find an issue or have an idea fo
 
 Last but not least, check out [yWorks](https://www.yworks.com)' fine diagramming SDKs for software developers [yFiles](https://yworks.com/yfiles) and our [free online graph and diagram editors](https://yworks.com/editors)!
 
-This is under MIT license Copyright (c) 2023 Sebastian Mueller and Michael Haeglsperger (yWorks)
+This is under MIT license Copyright (c) 2023 Sebastian Mueller (yWorks) and Michael Haeglsperger (yWorks)
