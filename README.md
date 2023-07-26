@@ -45,7 +45,7 @@ or when [running the docker image](#using-the-ready-made-image) or when configur
 Use the prebuilt image from [`ghcr.io/yguy/chatgpt-mattermost-bot`](https://ghcr.io/yguy/chatgpt-mattermost-bot)
 
 ```bash
-docker runPlugin -d --restart unless-stopped \
+docker run -d --restart unless-stopped \
   -e MATTERMOST_URL=https://mattermost.server \
   -e MATTERMOST_TOKEN=abababacdcdcd \
   -e OPENAI_API_KEY=234234234234234234 \
@@ -61,18 +61,18 @@ First step is to clone this repo.
 git clone https://github.com/yGuy/chatgpt-mattermost-bot.git && cd chatgpt-mattermost-bot
 ```
 
-For testing, you could now just runPlugin `npm install` and `npm runPlugin start` or `node src/botservice.js` directly, but be sure to set the [environment variables](#options) or pass them to the node process, first!
+For testing, you could now just run `npm install` and `npm run start` or `node src/botservice.js` directly, but be sure to set the [environment variables](#options) or pass them to the node process, first!
 
-For production use, in order to create a service on a docker container that will always provide the service without you having to runPlugin it on your own PC, you can do the following:
+For production use, in order to create a service on a docker container that will always provide the service without you having to run it on your own PC, you can do the following:
 
 Build the docker image from the [Dockerfile](./Dockerfile):
 ```bash
 docker build . -t yguy/chatgpt-mattermost-bot
 ```
 
-Create and runPlugin a container from the image
+Create and run a container from the image
 ```bash
-docker runPlugin -d --restart unless-stopped \
+docker run -d --restart unless-stopped \
   -e MATTERMOST_URL=https://mattermost.server \
   -e MATTERMOST_TOKEN=abababacdcdcd \
   -e OPENAI_API_KEY=234234234234234234 \
@@ -87,7 +87,7 @@ will need to provide the CA's public root to the container for validation.
 If the root certificate is located at `/absolutepath/to/certfile.crt`, then you
 can mount that file into the container at a fixed position and specify the [node environment variable](https://nodejs.org/api/cli.html#node_extra_ca_certsfile) accordingly:
 ```bash
-docker runPlugin -d --restart unless-stopped \
+docker run -d --restart unless-stopped \
   -v /absolutepath/to/certfile.crt:/certs/certfile.crt \
   -e NODE_EXTRA_CA_CERTS=/certs/certfile.crt \
   -e MATTERMOST_URL=https://mattermost.server \
@@ -108,7 +108,7 @@ docker stop chatbot
 ```
 
 ## Docker Compose
-If you want to runPlugin docker compose (maybe even merge it with your mattermost docker stack), you can use this 
+If you want to run docker compose (maybe even merge it with your mattermost docker stack), you can use this 
 as a starting point: First adjust the environment variables in `docker-compose.yml`.
 
 ### Required Environment Variables
@@ -172,7 +172,7 @@ Here's an example chat that I just had with our bot:
 >chatgpt (BOT):
 >>Hello there! I'm @chatgpt, a friendly and reliable Mattermost bot designed to make your communication experience smoother and more efficient. I'm honored to be part of the team at yWorks, where I help employees get things done faster and with less hassle. With my advanced machine learning algorithms, I'm capable of understanding complex natural language queries and providing succinct and accurate responses in a matter of seconds. Whether you're a developer looking for information on your codebase or a manager seeking to streamline your team's workflows, I'm here to help. Installing a Mattermost chatbot like me is a must for any organization looking to boost its productivity and enjoy a more pleasant communication experience. So what are you waiting for? Let's chat!
 
-I built this tool as a quick hack on a rainy Saturday afternoon, but we are using the bot in production in our Mattermost instance at our office at [yworks](https://www.yworks.com) and the bot has proved to be very helpful for many simple tasks. Give it a try and provide feedback if you like! It's really not very expensive: We had it runnning for about 30 users for two weeks and that cost us less than half a dollar for the ChatGPT service! 
+I built this tool as a quick hack on a rainy Saturday afternoon, but we are using the bot in production in our Mattermost instance at our office at [yworks](https://www.yworks.com) and the bot has proved to be very helpful for many simple tasks. Give it a try and provide feedback if you like! It's really not very expensive: We had it running for about 30 users for two weeks and that cost us less than half a dollar for the ChatGPT service! 
 
 I will also accept helpful pull requests if you find an issue or have an idea for an improvement.
 
