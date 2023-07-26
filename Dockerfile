@@ -1,5 +1,5 @@
 # NPM builder image
-FROM node:18-alpine as npm_builder
+FROM node:16-alpine as npm_builder
 
 WORKDIR /app
 COPY [ "package.json", "package-lock.json", "tsconfig.json", "./"]
@@ -9,7 +9,7 @@ RUN npm ci --omit dev
 RUN npm run build
 
 # NPM runtime image
-FROM node:18-alpine as npm_runtime
+FROM node:16-alpine as npm_runtime
 
 WORKDIR /app
 

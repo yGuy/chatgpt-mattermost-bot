@@ -10,17 +10,19 @@ const log = new Log('bot')
 const mattermostToken = process.env['MATTERMOST_TOKEN']!
 const matterMostURLString = process.env['MATTERMOST_URL']!
 
+log.trace("Configuring Mattermost URL to " + matterMostURLString)
+
 export const mmClient = new Client4()
 mmClient.setUrl(matterMostURLString)
 mmClient.setToken(mattermostToken)
 
 export const wsClient = new WebSocketClient()
-const wsUrl = new URL(exports.mmClient.getWebSocketUrl())
+const wsUrl = new URL(mmClient.getWebSocketUrl())
 wsUrl.protocol = wsUrl.protocol === 'https:' ? 'wss' : 'ws'
 
 new Promise((resolve, reject) => {
-    exports.wsClient.addCloseListener(() => reject())
-    exports.wsClient.addErrorListener((e: Event) => {
+    wsClient.addCloseListener(() => reject())
+    wsClient.addErrorListener((e: Event) => {
         reject(e)
     })
 })

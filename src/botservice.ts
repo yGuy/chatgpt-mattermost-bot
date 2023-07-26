@@ -1,6 +1,6 @@
 import {continueThread, registerChatPlugin} from "./openai-wrapper";
-import { Log } from "debug-level"
-import { mmClient, wsClient } from "./mm-client";
+import {Log} from "debug-level"
+import {mmClient, wsClient} from "./mm-client";
 import 'babel-polyfill'
 import 'isomorphic-fetch'
 import {WebSocketMessage} from "@mattermost/client";
@@ -13,7 +13,7 @@ import {JSONMessageData, MessageData} from "./types";
 import {ExitPlugin} from "./plugins/ExitPlugin";
 import {MessageCollectPlugin} from "./plugins/MessageCollectPlugin";
 
-if(!global.FormData) {
+if (!global.FormData) {
     global.FormData = require('form-data')
 }
 
@@ -36,15 +36,15 @@ const botInstructions = "Your name is " + name + " and you are a helpful assista
     "meta data of his messages."
 
 async function onClientMessage(msg: WebSocketMessage<JSONMessageData>, meId: string, log: Log) {
-    if(msg.event  !== 'posted' || !meId) {
+    if (msg.event !== 'posted' || !meId) {
         log.debug({msg: msg})
         return
     }
 
     const msgData = parseMessageData(msg.data)
-    const posts = await getOlderPosts(msgData.post, { lookBackTime: 1000 * 60 * 60 * 24 })
+    const posts = await getOlderPosts(msgData.post, {lookBackTime: 1000 * 60 * 60 * 24})
 
-    if(isMessageIgnored(msgData, meId, posts)) {
+    if (isMessageIgnored(msgData, meId, posts)) {
         return
     }
 
@@ -56,7 +56,7 @@ async function onClientMessage(msg: WebSocketMessage<JSONMessageData>, meId: str
     ]
 
     // create the context
-    for(const threadPost of posts.slice(-contextMsgCount)) {
+    for (const threadPost of posts.slice(-contextMsgCount)) {
         log.trace({msg: threadPost})
         if (threadPost.user_id === meId) {
             chatmessages.push({
@@ -79,7 +79,7 @@ async function onClientMessage(msg: WebSocketMessage<JSONMessageData>, meId: str
 
     try {
         log.trace({chatmessages})
-        const { message, fileId, props } = await continueThread(chatmessages, msgData)
+        const {message, fileId, props} = await continueThread(chatmessages, msgData)
         log.trace({message})
 
         // create answer response
@@ -91,7 +91,7 @@ async function onClientMessage(msg: WebSocketMessage<JSONMessageData>, meId: str
             file_ids: fileId ? [fileId] : undefined
         })
         log.trace({msg: newPost})
-    } catch(e) {
+    } catch (e) {
         log.error(e)
         await mmClient.createPost({
             message: "Sorry, but I encountered an internal error when trying to process your message",
@@ -114,16 +114,22 @@ async function onClientMessage(msg: WebSocketMessage<JSONMessageData>, meId: str
  */
 function isMessageIgnored(msgData: MessageData, meId: string, previousPosts: Post[]): boolean {
     // we are not in a thread and not mentioned
-    if(msgData.post.root_id === '' && !msgData.mentions.includes(meId)) { return true }
+    if (msgData.post.root_id === '' && !msgData.mentions.includes(meId)) {
+        return true
+    }
 
     // it is our own message
-    if(msgData.post.user_id === meId) { return true }
+    if (msgData.post.user_id === meId) {
+        return true
+    }
 
-    for(let i = previousPosts.length - 1; i > 0; i--) {
+    for (let i = previousPosts.length - 1; i > 0; i--) {
         // we were asked to stop participating in the conversation
-        if(previousPosts[i].props.bot_status === 'stopped') { return true }
+        if (previousPosts[i].props.bot_status === 'stopped') {
+            return true
+        }
 
-        if(previousPosts[i].user_id === meId || previousPosts[i].message.includes(name)) {
+        if (previousPosts[i].user_id === meId || previousPosts[i].message.includes(name)) {
             // we are in a thread were we are actively participating, or we were mentioned in the thread => respond
             return false
         }
@@ -155,23 +161,24 @@ function parseMessageData(msg: JSONMessageData): MessageData {
  *     <li><b>postCount</b>: Determines how many of the previous posts should be collected. If this parameter is omitted all posts are returned.</li>
  * </ul>
  */
-async function getOlderPosts(refPost: Post, options: {lookBackTime?: number, postCount?: number }) {
+async function getOlderPosts(refPost: Post, options: { lookBackTime?: number, postCount?: number }) {
     const thread = await mmClient.getPostThread(refPost.id, true, false, true)
 
     let posts: Post[] = [...new Set(thread.order)].map(id => thread.posts[id])
         .sort((a, b) => a.create_at - b.create_at)
 
-    if(options.lookBackTime && options.lookBackTime > 0) {
+    if (options.lookBackTime && options.lookBackTime > 0) {
         posts = posts.filter(a => a.create_at > refPost.create_at - options.lookBackTime!)
     }
-    if(options.postCount && options.postCount > 0) {
+    if (options.postCount && options.postCount > 0) {
         posts = posts.slice(-options.postCount)
     }
 
     return posts
 }
 
-const usernameCache: Record<string, {username: string, expireTime: number}> = {}
+const usernameCache: Record<string, { username: string, expireTime: number }> = {}
+
 /**
  * Looks up the mattermost username for the given userId. Every username which is looked up will be cached for 5 minutes.
  * @param userId
@@ -180,17 +187,17 @@ async function userIdToName(userId: string): Promise<string> {
     let username: string
 
     // check if userId is in cache and not outdated
-    if(usernameCache[userId] && Date.now() < usernameCache[userId].expireTime ) {
+    if (usernameCache[userId] && Date.now() < usernameCache[userId].expireTime) {
         username = usernameCache[userId].username
     } else {
         // username not in cache our outdated
         username = (await mmClient.getUser(userId)).username
 
-        if(!/^[a-zA-Z0-9_-]{1,64}$/.test(username)) {
-            username = username.replace(/[.@!?]/g,'_').slice(0, 64)
+        if (!/^[a-zA-Z0-9_-]{1,64}$/.test(username)) {
+            username = username.replace(/[.@!?]/g, '_').slice(0, 64)
         }
 
-        if(!/^[a-zA-Z0-9_-]{1,64}$/.test(username)) {
+        if (!/^[a-zA-Z0-9_-]{1,64}$/.test(username)) {
             username = [...username.matchAll(/[a-zA-Z0-9_-]/g)].join('').slice(0, 64)
         }
 
@@ -203,20 +210,28 @@ async function userIdToName(userId: string): Promise<string> {
     return username
 }
 
+Log.options({json: true, colors: true})
+Log.wrapConsole('bot-ws', {level4log: 'INFO'})
+const log = new Log('bot')
+
 /* Entry point */
 async function main(): Promise<void> {
-    Log.options({json: true, colors: true})
-    Log.wrapConsole('bot-ws', { level4log: 'INFO'})
-    const log = new Log('bot')
     const meId = (await mmClient.getMe()).id
 
-    for(const plugin of plugins) {
-        if(plugin.setup()) {
+    log.log("Connected to Mattermost.")
+
+    for (const plugin of plugins) {
+        if (plugin.setup()) {
             registerChatPlugin(plugin)
+            log.trace("Registered plugin " + plugin.key)
         }
     }
 
     wsClient.addMessageListener((e) => onClientMessage(e, meId, log))
+    log.trace("Listening to MM messages...")
 }
 
-main().catch(console.error)
+main().catch(reason => {
+    log.error(reason);
+    process.exit(-1)
+})
