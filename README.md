@@ -2,6 +2,9 @@
 
 ![A chat window in Mattermost showing the chat between the OpenAI bot and "yGuy"](./mattermost-chat.png)
 
+> **Warning**
+> There is currently an issue with the bot processing more messages than it should - see [Issue 50](https://github.com/yGuy/chatgpt-mattermost-bot/issues/50)
+
 The bot can talk to you like a regular mattermost user. It's like having chat.openai.com built collaboratively built into Mattermost!
 But that's not all, you can also use it to generate images via Dall-E or diagram visualizations via a yFiles plugin! 
 
