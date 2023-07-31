@@ -1,5 +1,4 @@
 import {continueThread, registerChatPlugin} from "./openai-wrapper";
-import {Log} from "debug-level"
 import {mmClient, wsClient} from "./mm-client";
 import 'babel-polyfill'
 import 'isomorphic-fetch'
@@ -12,6 +11,8 @@ import {PluginBase} from "./plugins/PluginBase";
 import {JSONMessageData, MessageData} from "./types";
 import {ExitPlugin} from "./plugins/ExitPlugin";
 import {MessageCollectPlugin} from "./plugins/MessageCollectPlugin";
+
+import {botLog, matterMostLog} from "./logging";
 
 if (!global.FormData) {
     global.FormData = require('form-data')
@@ -33,9 +34,9 @@ const botInstructions = "Your name is " + name + " and you are a helpful assista
     "provide them with succinct answers formatted using Markdown. You know the user's name as it is provided within the " +
     "meta data of the messages."
 
-async function onClientMessage(msg: WebSocketMessage<JSONMessageData>, meId: string, log: Log) {
+async function onClientMessage(msg: WebSocketMessage<JSONMessageData>, meId: string) {
     if (msg.event !== 'posted' || !meId) {
-        log.debug({msg: msg})
+        matterMostLog.debug({msg: msg})
         return
     }
 
@@ -55,7 +56,7 @@ async function onClientMessage(msg: WebSocketMessage<JSONMessageData>, meId: str
 
     // create the context
     for (const threadPost of posts.slice(-contextMsgCount)) {
-        log.trace({msg: threadPost})
+        matterMostLog.trace({msg: threadPost})
         if (threadPost.user_id === meId) {
             chatmessages.push({
                 role: ChatCompletionRequestMessageRoleEnum.Assistant,
@@ -76,9 +77,8 @@ async function onClientMessage(msg: WebSocketMessage<JSONMessageData>, meId: str
     const typingInterval = setInterval(typing, 2000)
 
     try {
-        log.trace({chatmessages})
         const {message, fileId, props} = await continueThread(chatmessages, msgData)
-        log.trace({message})
+        botLog.trace({message})
 
         // create answer response
         const newPost = await mmClient.createPost({
@@ -88,9 +88,9 @@ async function onClientMessage(msg: WebSocketMessage<JSONMessageData>, meId: str
             root_id: msgData.post.root_id || msgData.post.id,
             file_ids: fileId ? [fileId] : undefined
         })
-        log.trace({msg: newPost})
+        botLog.trace({msg: newPost})
     } catch (e) {
-        log.error(e)
+        botLog.error(e)
         await mmClient.createPost({
             message: "Sorry, but I encountered an internal error when trying to process your message",
             channel_id: msgData.post.channel_id,
@@ -208,28 +208,24 @@ async function userIdToName(userId: string): Promise<string> {
     return username
 }
 
-Log.options({json: true, colors: true})
-Log.wrapConsole('bot-ws', {level4log: 'INFO'})
-const log = new Log('bot')
-
 /* Entry point */
 async function main(): Promise<void> {
     const meId = (await mmClient.getMe()).id
 
-    log.log("Connected to Mattermost.")
+    botLog.log("Connected to Mattermost.")
 
     for (const plugin of plugins) {
         if (plugin.setup()) {
             registerChatPlugin(plugin)
-            log.trace("Registered plugin " + plugin.key)
+            botLog.trace("Registered plugin " + plugin.key)
         }
     }
 
-    wsClient.addMessageListener((e) => onClientMessage(e, meId, log))
-    log.trace("Listening to MM messages...")
+    wsClient.addMessageListener((e) => onClientMessage(e, meId))
+    botLog.trace("Listening to MM messages...")
 }
 
 main().catch(reason => {
-    log.error(reason);
+    botLog.error(reason);
     process.exit(-1)
 })
