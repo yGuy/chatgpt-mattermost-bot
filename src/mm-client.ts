@@ -34,4 +34,23 @@ new Promise((resolve, reject) => {
     process.exit(-1)
 })
 
+/**
+ * this resolves an issue with lost web messages and the client rebooting endlessly -
+ * we need to have a listener attached to the client from the start so that it does
+ * not reconnect infinitely, internally
+ */
+function workaroundWebsocketPackageLostIssue(webSocketClient: WebSocketClient) {
+    // after a hundred messages it should be ok to unregister - the actual
+    // listener should have been added by now.
+    let messageCount = 100;
+    const firstMessagesListener = (e: any) => {
+        if (messageCount-- < 1) {
+            webSocketClient.removeMessageListener(firstMessagesListener)
+        }
+    };
+    webSocketClient.addMessageListener(firstMessagesListener)
+}
+
+workaroundWebsocketPackageLostIssue(wsClient);
+
 wsClient.initialize(wsUrl.toString(), mattermostToken)
