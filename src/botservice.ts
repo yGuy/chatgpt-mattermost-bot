@@ -123,7 +123,7 @@ function isMessageIgnored(msgData: MessageData, meId: string, previousPosts: Pos
         return true
     }
 
-    for (let i = previousPosts.length - 1; i > 0; i--) {
+    for (let i = previousPosts.length - 1; i >= 0; i--) {
         // we were asked to stop participating in the conversation
         if (previousPosts[i].props.bot_status === 'stopped') {
             return true
@@ -135,8 +135,8 @@ function isMessageIgnored(msgData: MessageData, meId: string, previousPosts: Pos
         }
     }
 
-    // we are in a thread but were never mentioned
-    return false
+    // we are in a thread but did not participate or got mentioned - we should ignore this message
+    return true
 }
 
 /**
