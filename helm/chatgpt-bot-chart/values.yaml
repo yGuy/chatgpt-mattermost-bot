@@ -1,0 +1,46 @@
+mattermost:
+  # <your-mattermost-service-name>.<namespace-where-service-is-deployed>.svc.cluster.local
+  clusterUrl: http://mattermost-team-edition.mattermost.svc.cluster.local
+  port: 8065
+
+replicaCount: 1
+
+image:
+  registry: ghcr.io/yguy
+  repository: chatgpt-mattermost-bot
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: "chatgpt-bot"
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
+service:
+  type: ClusterIP
+  port: 80
+
+resources: {}
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
