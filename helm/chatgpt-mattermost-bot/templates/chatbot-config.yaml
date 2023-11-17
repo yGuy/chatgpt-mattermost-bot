@@ -17,5 +17,4 @@ data:
   DEBUG_LEVEL: "{{ .Values.config.DEBUG_LEVEL | default "INFO"  }}"
   BOT_CONTEXT_MSG: "{{ .Values.config.BOT_CONTEXT_MSG | default "100"  }}"
   NODE_ENV: "{{ .Values.config.NODE_ENV | default "production"  }}"
-
-
+  BOT_INSTRUCTION: "{{ .Values.config.BOT_INSTRUCTION | default ""  }}"
