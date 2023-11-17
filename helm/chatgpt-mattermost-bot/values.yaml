@@ -1,3 +1,17 @@
+image:
+  registry: ghcr.io/yguy
+  repository: chatgpt-mattermost-bot
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "v2.1.2"
+
+imagePullSecrets: []
+
+replicaCount: 1
+
+nameOverride: ""
+fullnameOverride: "chatgpt-mattermost-bot"
+
 config:                   #   required:   example:                    description:
   MATTERMOST_URL: ""      #	  yes	        https://mattermost.server	  The URL to the server. This is used for connecting the bot to the Mattermost API
   MATTERMOST_TOKEN: ""	  #   yes	        abababacdcdcd	              The authentication token from the logged in mattermost bot
@@ -14,19 +28,6 @@ config:                   #   required:   example:                    descriptio
   NODE_ENV: ""            #   no          development                 The mode NodeJS runs in. Defaults to production
 
 
-replicaCount: 1
-
-image:
-  registry: ghcr.io/yguy
-  repository: chatgpt-mattermost-bot
-  pullPolicy: IfNotPresent
-  # Overrides the image tag whose default is the chart appVersion.
-  tag: "latest"
-
-imagePullSecrets: []
-nameOverride: ""
-fullnameOverride: "chatgpt-bot"
-
 serviceAccount:
   create: true
   annotations: {}
@@ -34,13 +35,6 @@ serviceAccount:
 
 podAnnotations: {}
 
-podSecurityContext: {}
-
-securityContext: {}
-
-service:
-  type: ClusterIP
-  port: 80
 
 resources: {}
 

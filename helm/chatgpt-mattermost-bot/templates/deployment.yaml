@@ -38,10 +38,6 @@ spec:
                 name: {{ include "chatgpt-mattermost-bot.fullname" . }}-config
             - secretRef:
                 name: {{ include "chatgpt-mattermost-bot.fullname" . }}-secret
-          ports:
-            - name: http
-              containerPort: {{ .Values.service.port }}
-              protocol: TCP
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
