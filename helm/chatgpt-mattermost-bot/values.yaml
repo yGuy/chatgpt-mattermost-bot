@@ -3,7 +3,7 @@ image:
   repository: chatgpt-mattermost-bot
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "v2.1.2"
+  tag: ""
 
 imagePullSecrets: []
 
