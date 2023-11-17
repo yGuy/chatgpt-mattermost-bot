@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "chatgpt-mattermost-bot.fullname" . }}-config
+  labels:
+    app: chatgpt-mattermost-bot
+  {{- include "chatgpt-mattermost-bot.labels" . | nindent 4 }}
+data:
+  MATTERMOST_URL: "{{ required "MATTERMOST_URL is required" .Values.config.MATTERMOST_URL }}"
+  OPENAI_MODEL_NAME: "{{ .Values.config.OPENAI_MODEL_NAME | default "gpt-3.5-turbo" }}"
+  OPENAI_MAX_TOKENS: "{{ .Values.config.OPENAI_MAX_TOKENS | default "2000" }}"
+  OPENAI_TEMPERATURE: "{{ .Values.config.OPENAI_TEMPERATURE | default "1"  }}"
+  YFILES_SERVER_URL: "{{ .Values.config.YFILES_SERVER_URL | default ""  }}"
+  NODE_EXTRA_CA_CERTS: "{{ .Values.config.NODE_EXTRA_CA_CERTS | default ""  }}"
+  MATTERMOST_BOTNAME: "{{ .Values.config.MATTERMOST_BOTNAME | default "@chatgpt"  }}"
+  PLUGINS: "{{ .Values.config.PLUGINS | default "graph-plugin, image-plugin"  }}"
+  DEBUG_LEVEL: "{{ .Values.config.DEBUG_LEVEL | default "INFO"  }}"
+  BOT_CONTEXT_MSG: "{{ .Values.config.BOT_CONTEXT_MSG | default "100"  }}"
+  NODE_ENV: "{{ .Values.config.NODE_ENV | default "production"  }}"
+
+
