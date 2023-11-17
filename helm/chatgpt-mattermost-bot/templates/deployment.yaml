@@ -33,10 +33,9 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          env:
-            - name: MATTERMOST_URL
-              value: {{ .Values.mattermost.clusterUrl }}:{{ .Values.mattermost.port }}
           envFrom:
+            - configMapRef:
+                name: {{ include "chatgpt-mattermost-bot.fullname" . }}-config
             - secretRef:
                 name: {{ include "chatgpt-mattermost-bot.fullname" . }}-secret
           ports:
