@@ -38,6 +38,14 @@ spec:
                 name: {{ include "chatgpt-mattermost-bot.fullname" . }}-config
             - secretRef:
                 name: {{ include "chatgpt-mattermost-bot.fullname" . }}-secret
+          livenessProbe:
+            exec:
+              command:
+                - pidof
+                - node
+            initialDelaySeconds: 5
+            periodSeconds: 15
+            failureThreshold: 4
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}
