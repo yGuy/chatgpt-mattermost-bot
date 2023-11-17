@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "chatgpt-bot-chart.fullname" . }}
+  name: {{ include "chatgpt-mattermost-bot.fullname" . }}
   labels:
-    {{- include "chatgpt-bot-chart.labels" . | nindent 4 }}
+    {{- include "chatgpt-mattermost-bot.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-      {{- include "chatgpt-bot-chart.selectorLabels" . | nindent 6 }}
+      {{- include "chatgpt-mattermost-bot.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -18,13 +18,13 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "chatgpt-bot-chart.selectorLabels" . | nindent 8 }}
+        {{- include "chatgpt-mattermost-bot.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "chatgpt-bot-chart.serviceAccountName" . }}
+      serviceAccountName: {{ include "chatgpt-mattermost-bot.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
@@ -33,16 +33,19 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          env:
-            - name: MATTERMOST_URL
-              value: {{ .Values.mattermost.clusterUrl }}:{{ .Values.mattermost.port }}
           envFrom:
+            - configMapRef:
+                name: {{ include "chatgpt-mattermost-bot.fullname" . }}-config
             - secretRef:
-                name: {{ include "chatgpt-bot-chart.fullname" . }}-secret
-          ports:
-            - name: http
-              containerPort: {{ .Values.service.port }}
-              protocol: TCP
+                name: {{ include "chatgpt-mattermost-bot.fullname" . }}-secret
+          livenessProbe:
+            exec:
+              command:
+                - pidof
+                - node
+            initialDelaySeconds: 5
+            periodSeconds: 15
+            failureThreshold: 4
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}

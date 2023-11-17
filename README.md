@@ -166,15 +166,15 @@ docker compose down
 
 
 ## Deploy to Kubernetes with Helm
-The chatgpt-bot-chart deploys a containerized chatgpt-bot instance which will connect to a running mattermost container in the same kubernetes cluster.  Chart uses 'mattermost-team-edition' and the 'mattermost' namespace by default.  Uses environment variables MATTERMOST_TOKEN and OPENAI_API_KEY. 
+The chatgpt-mattermost-bot chart deploys a containerized chatgpt-mattermost-bot instance which will connect to a running mattermost container in the same kubernetes cluster.  Chart uses 'mattermost-team-edition' and the 'mattermost' namespace by default.  Uses environment variables MATTERMOST_TOKEN and OPENAI_API_KEY. 
 ```bash
-helm upgrade chatgpt-bot ./helm/chatgpt-bot-chart \
+helm upgrade chatgpt-mattermost-bot ./helm/chatgpt-mattermost-bot \
   --create-namespace \
   --install \
   -n mattermost \
-  -f ./helm/chatgpt-bot-chart/values.yaml \
-  --set chatbot.mattermostToken="$MATTERMOST_TOKEN" \
-  --set chatbot.openaiApiKey="$OPENAI_API_KEY"
+  -f ./helm/chatgpt-mattermost-bot/values.yaml \
+  --set config.MATTERMOST_TOKEN="$MATTERMOST_TOKEN" \
+  --set config.OPENAI_API_KEY="$OPENAI_API_KEY"
 ```
 
 ## Example Conversation

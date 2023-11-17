@@ -1,0 +1,7 @@
+apiVersion: v2
+name: chatgpt-mattermost-bot
+description: A ChatGPT-powered Chatbot for Mattermost
+type: application
+version: 2.1.2
+appVersion: v2.1.2
+
