@@ -11,9 +11,10 @@ import {PluginBase} from "./plugins/PluginBase";
 import {AiResponse, MessageData} from "./types";
 
 const apiKey = process.env['OPENAI_API_KEY'];
-log.trace({apiKey})
+const basePath = process.env['OPENAI_API_BASE'];
+log.trace({apiKey, basePath})
 
-const configuration = new Configuration({ apiKey })
+const configuration = new Configuration({ apiKey, basePath })
 
 const openai = new OpenAIApi(configuration)
 
