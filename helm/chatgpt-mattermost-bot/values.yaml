@@ -3,7 +3,7 @@ image:
   repository: chatgpt-mattermost-bot
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "v2.1.2"
+  tag: ""
 
 imagePullSecrets: []
 
@@ -26,6 +26,7 @@ config:                   #   required:   example:                    descriptio
   DEBUG_LEVEL: ""         #   no	        TRACE	                      a debug level used for logging activity, defaults to INFO
   BOT_CONTEXT_MSG: ""     #   no	        15	                        The number of previous messages which are appended to the conversation with ChatGPT, defaults to 100
   NODE_ENV: ""            #   no          development                 The mode NodeJS runs in. Defaults to production
+  BOT_INSTRUCTION: ""     #   no          Act like Elon Musk          Extra instruction to give your assistance. How should the assistant behave?
 
 
 serviceAccount:

@@ -37,6 +37,7 @@ or when [running the docker image](#using-the-ready-made-docker-image) or when c
 | PLUGINS              | no       | `graph-plugin, image-plugin` | The enabled plugins of the bot. By default all plugins (grpah-plugin and image-plugin) are enabled.                                                                                                |
 | DEBUG_LEVEL          | no       | `TRACE`                      | a debug level used for logging activity, defaults to `INFO`                                                                                                                                        |
 | BOT_CONTEXT_MSG      | no       | `15`                         | The number of previous messages which are appended to the conversation with ChatGPT, defaults to 100                                                                                               |
+| BOT_INSTRUCTION      | no       | `Act like Elon Musk`         | Extra instruction to give your assistance. How should the assistant behave? |
 
 > **Note**
 > The `YFILES_SERVER_URL` is used for automatically converting text information created by the bot into diagrams.
