@@ -1,6 +1,6 @@
 {
   "name": "chatgpt-mattermost-bot",
-  "version": "2.1.2",
+  "version": "2.2.0",
   "private": true,
   "scripts": {
     "start": "ts-node ./src/botservice.ts",
