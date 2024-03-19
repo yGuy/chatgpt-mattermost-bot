@@ -1,23 +1,23 @@
-import {continueThread, registerChatPlugin} from "./openai-wrapper";
-import {mmClient, wsClient} from "./mm-client";
+import { continueThread, registerChatPlugin } from "./openai-wrapper";
+import { mmClient, wsClient } from "./mm-client";
 import 'babel-polyfill'
 import 'isomorphic-fetch'
-import {WebSocketMessage} from "@mattermost/client";
-import {ChatCompletionRequestMessage, ChatCompletionRequestMessageRoleEnum} from "openai";
-import {GraphPlugin} from "./plugins/GraphPlugin";
-import {ImagePlugin} from "./plugins/ImagePlugin";
-import {Post} from "@mattermost/types/lib/posts";
-import {PluginBase} from "./plugins/PluginBase";
-import {JSONMessageData, MessageData} from "./types";
-import {ExitPlugin} from "./plugins/ExitPlugin";
-import {MessageCollectPlugin} from "./plugins/MessageCollectPlugin";
+import { WebSocketMessage } from "@mattermost/client";
+import { ChatCompletionRequestMessage, ChatCompletionRequestMessageRoleEnum } from "openai";
+import { GraphPlugin } from "./plugins/GraphPlugin";
+import { ImagePlugin } from "./plugins/ImagePlugin";
+import { Post } from "@mattermost/types/lib/posts";
+import { PluginBase } from "./plugins/PluginBase";
+import { JSONMessageData, MessageData } from "./types";
+import { ExitPlugin } from "./plugins/ExitPlugin";
+import { MessageCollectPlugin } from "./plugins/MessageCollectPlugin";
 
-import {botLog, matterMostLog} from "./logging";
+import { botLog, matterMostLog } from "./logging";
 
 if (!global.FormData) {
     global.FormData = require('form-data')
 }
-
+const typingInMainThread = process.env['MATTERMOST_TYPE_IN_MAIN_THREAD'] == 'true' || false
 const name = process.env['MATTERMOST_BOTNAME'] || '@chatgpt'
 const contextMsgCount = Number(process.env['BOT_CONTEXT_MSG'] ?? 100)
 const additionalBotInstructions = process.env['BOT_INSTRUCTION'] || "You are a helpful assistant. Whenever users asks you for help you will " +
@@ -34,16 +34,16 @@ const plugins: PluginBase<any>[] = [
 
 /* The main system instruction for GPT */
 const botInstructions = "Your name is " + name + ". " + additionalBotInstructions
-botLog.debug({botInstructions: botInstructions})
+botLog.debug({ botInstructions: botInstructions })
 
 async function onClientMessage(msg: WebSocketMessage<JSONMessageData>, meId: string) {
     if (msg.event !== 'posted' || !meId) {
-        matterMostLog.debug({msg: msg})
+        matterMostLog.debug({ msg: msg })
         return
     }
 
     const msgData = parseMessageData(msg.data)
-    const posts = await getOlderPosts(msgData.post, {lookBackTime: 1000 * 60 * 60 * 24})
+    const posts = await getOlderPosts(msgData.post, { lookBackTime: 1000 * 60 * 60 * 24 })
 
     if (isMessageIgnored(msgData, meId, posts)) {
         return
@@ -58,7 +58,7 @@ async function onClientMessage(msg: WebSocketMessage<JSONMessageData>, meId: str
 
     // create the context
     for (const threadPost of posts.slice(-contextMsgCount)) {
-        matterMostLog.trace({msg: threadPost})
+        matterMostLog.trace({ msg: threadPost })
         if (threadPost.user_id === meId) {
             chatmessages.push({
                 role: ChatCompletionRequestMessageRoleEnum.Assistant,
@@ -78,9 +78,18 @@ async function onClientMessage(msg: WebSocketMessage<JSONMessageData>, meId: str
     typing()
     const typingInterval = setInterval(typing, 2000)
 
+    // start typing in global channel
+    const typingInMain = () => wsClient.userTyping(msgData.post.channel_id, "")
+    var typingIntervalInMain = setInterval(typingInMain, 2000)
+    if (typingInMainThread) {
+        typingInMain()
+    } else {
+        clearInterval(typingIntervalInMain)
+    }
+
     try {
-        const {message, fileId, props} = await continueThread(chatmessages, msgData)
-        botLog.trace({message})
+        const { message, fileId, props } = await continueThread(chatmessages, msgData)
+        botLog.trace({ message })
 
         // create answer response
         const newPost = await mmClient.createPost({
@@ -90,7 +99,7 @@ async function onClientMessage(msg: WebSocketMessage<JSONMessageData>, meId: str
             root_id: msgData.post.root_id || msgData.post.id,
             file_ids: fileId ? [fileId] : undefined
         })
-        botLog.trace({msg: newPost})
+        botLog.trace({ msg: newPost })
     } catch (e) {
         botLog.error(e)
         await mmClient.createPost({
@@ -101,6 +110,9 @@ async function onClientMessage(msg: WebSocketMessage<JSONMessageData>, meId: str
     } finally {
         // stop typing
         clearInterval(typingInterval)
+        if (typingInMainThread) {
+            clearInterval(typingIntervalInMain)
+        }
     }
 }
 
