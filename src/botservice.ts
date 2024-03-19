@@ -17,7 +17,7 @@ import { botLog, matterMostLog } from "./logging";
 if (!global.FormData) {
     global.FormData = require('form-data')
 }
-const typingInMainThread = process.env['TYPE_IN_MAIN'] == 'true' || false
+const typingInMainThread = process.env['MATTERMOST_TYPE_IN_MAIN_THREAD'] == 'true' || false
 const name = process.env['MATTERMOST_BOTNAME'] || '@chatgpt'
 const contextMsgCount = Number(process.env['BOT_CONTEXT_MSG'] ?? 100)
 const additionalBotInstructions = process.env['BOT_INSTRUCTION'] || "You are a helpful assistant. Whenever users asks you for help you will " +
